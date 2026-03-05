@@ -1,3 +1,6 @@
+# Stale renamed project artefact (left over from HabitTracker → BodyPhase rename)
+HabitTracker.xcodeproj/
+
 # Xcode
 *.xcodeproj/xcuserdata/
 *.xcworkspace/xcuserdata/
