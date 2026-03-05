@@ -27,6 +27,14 @@ targets:
           - "*.xcodeproj/**"
           - "*.xcworkspace/**"
           - "build/**"
+          - "Screenshots/**"
+          - "README.md"
+          - "LICENSE"
+          - ".gitignore"
+          - "*.md"
+          - "*.png"
+          - "*.jpg"
+          - "*.jpeg"
     settings:
       base:
         PRODUCT_NAME: BodyPhase
@@ -38,7 +46,6 @@ targets:
       properties:
         CFBundleName: BodyPhase
         CFBundleDisplayName: BodyPhase
-        CFBundleIdentifier: com.debugmonk.fittrack
         CFBundleVersion: "1"
         CFBundleShortVersionString: "1.0.0"
         CFBundlePackageType: APPL
