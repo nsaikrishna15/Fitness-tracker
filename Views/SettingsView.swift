@@ -256,6 +256,49 @@ struct SettingsView: View {
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundColor(.secondaryText)
             }
+
+            // MARK: - About
+            Section {
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack(spacing: 10) {
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(Color.accentGreen.opacity(0.12))
+                                .frame(width: 36, height: 36)
+                            Text("dm")
+                                .font(.system(size: 13, weight: .black, design: .monospaced))
+                                .foregroundColor(.accentGreen)
+                        }
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("debugmonk")
+                                .font(.system(size: 15, weight: .bold))
+                                .foregroundColor(.primaryText)
+                            Text("debugmonk.com")
+                                .font(.system(size: 12))
+                                .foregroundColor(.accentGreen)
+                        }
+                    }
+                    Text("FitTrack is an open-source iOS fitness tracker built by debugmonk. Source code available on GitHub.")
+                        .font(.system(size: 12))
+                        .foregroundColor(.secondaryText)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Link(destination: URL(string: "https://github.com/nsaikrishna15/Fitness-tracker")!) {
+                        HStack(spacing: 6) {
+                            Image(systemName: "arrow.up.right.square")
+                                .font(.system(size: 11))
+                            Text("View source on GitHub")
+                                .font(.system(size: 12, weight: .medium))
+                        }
+                        .foregroundColor(.accentGreen)
+                    }
+                }
+                .padding(.vertical, 4)
+                .listRowBackground(Color.cardBackground)
+            } header: {
+                Text("ABOUT")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundColor(.secondaryText)
+            }
         }
         .scrollContentBackground(.hidden)
         .background(Color.appBackground)
