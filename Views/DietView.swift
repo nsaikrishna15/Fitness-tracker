@@ -281,10 +281,10 @@ struct DietView: View {
         let weekLabel  = isWeekA ? "Week A" : "Week B"
         let nextLabel  = isWeekA ? "Next week: Grapes + Pear" : "Next week: Banana + Apple"
         let fruits: [(name: String, use: String, macro: String)] = isWeekA
-            ? [("Banana",  "Pre-workout — 1 medium, grab and go, no prep",    "~27g carbs, quick energy"),
-               ("Apple",   "Afternoon snack — any variety, eat whole",        "~25g carbs, 4g fibre")]
-            : [("Grapes",  "Pre-workout or snack — 150g handful, no cutting", "~26g carbs, easy to portion"),
-               ("Pear",    "Afternoon snack — eat whole, pairs with almonds", "~27g carbs, 5g fibre")]
+            ? [("Banana",  "Pre-workout — 1 medium (~120 g). Sizes vary; pick one that fills your palm.", "~27g carbs, quick energy"),
+               ("Apple",   "Afternoon snack — 1 medium (~180 g), any variety, eat whole",                "~25g carbs, 4g fibre")]
+            : [("Grapes",  "Pre-workout or snack — 150 g (~22 grapes). Weigh on a scale; don't count by eye — grapes vary from 4 g to 10 g each.", "~26g carbs, easy to portion"),
+               ("Pear",    "Afternoon snack — 1 medium (~180 g), eat whole, pairs with almonds",          "~27g carbs, 5g fibre")]
 
         return VStack(alignment: .leading, spacing: 12) {
             HStack {
@@ -541,7 +541,7 @@ private func mealPlan(from m: [DietPlan.MealMacros], protein: String) -> [MealIt
             time: "6:45 AM", name: "Pre-Workout",
             ingredients: [
                 "1 scoop whey protein in 300ml water",
-                "1 piece of this week's fruit (banana or grapes)",
+                "1 piece of this week's fruit — banana: 1 medium (~120 g); grapes: weigh 150 g (~22 grapes)",
                 "Optional: 5g creatine stirred into the shake",
             ],
             macros: m.count > 0 ? m[0].summary : "",

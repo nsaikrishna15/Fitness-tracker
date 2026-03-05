@@ -1,5 +1,16 @@
 import SwiftUI
 
+// MARK: - Session display state
+// .interactive   — past days, or today after session unlock time
+// .todayLocked   — today, before session unlock time (show exercises read-only with unlock time chip)
+// .upcoming      — any future day (show exercises read-only with "PREVIEW" chip)
+
+private enum SessionDisplayMode {
+    case interactive
+    case todayLocked(unlocksAt: String)
+    case upcoming
+}
+
 struct WorkoutView: View {
     @EnvironmentObject private var store: HabitStore
     @State private var selectedDate: Date = Calendar.current.startOfDay(for: Date())
@@ -8,21 +19,49 @@ struct WorkoutView: View {
 
     private var today: Date { Calendar.current.startOfDay(for: Date()) }
 
-    /// All 120 calendar days of the program, from program start date.
+    /// All 120 calendar days of the program, starting from the program start date.
     private var allProgramDays: [Date] {
         let cal = Calendar.current
         let start = cal.startOfDay(for: store.programStartDate)
         return (0..<120).compactMap { cal.date(byAdding: .day, value: $0, to: start) }
     }
 
-    /// Future days in the program — shown in read-only preview mode so the user
-    /// can plan equipment and mentally prepare. No set logging allowed.
-    private func isPreview(_ date: Date) -> Bool { date.isFutureDay }
+    // MARK: - Session unlock logic
+    //
+    // Each session unlocks 5 minutes before it starts, so the user can read
+    // the exercise list, confirm weights, and mentally prepare before walking in.
+    //
+    // Morning sessions start at 7:00 AM → unlock at 6:55 AM.
+    // Evening sessions start at 6:00 PM → unlock at 5:55 PM.
+    // These times match the program schedule defined in Habit.swift.
 
-    /// Today before 6:59 AM — show locked card; sets cannot be logged yet.
-    private func isLocked(_ date: Date) -> Bool {
-        guard !date.isPastDay, !date.isFutureDay else { return false }
-        return currentMinute < (6 * 60 + 59)
+    private func unlockMins(for session: WorkoutSession) -> Int {
+        switch session.slot.lowercased() {
+        case "evening": return 17 * 60 + 55   // 5:55 PM
+        default:        return 6 * 60 + 55     // 6:55 AM  (morning)
+        }
+    }
+
+    private func displayMode(for session: WorkoutSession, on date: Date) -> SessionDisplayMode {
+        // Past days: always fully interactive (retroactive logging allowed)
+        if date.isPastDay { return .interactive }
+
+        // Future days: upcoming preview only
+        if date.isFutureDay { return .upcoming }
+
+        // Today: unlock 5 minutes before the session starts
+        let unlock = unlockMins(for: session)
+        if currentMinute >= unlock { return .interactive }
+
+        // Build a human-readable unlock time string, e.g. "6:55 AM" or "5:55 PM"
+        let h = unlock / 60
+        let m = unlock % 60
+        let suffix = h < 12 ? "AM" : "PM"
+        let h12   = h == 0 ? 12 : (h > 12 ? h - 12 : h)
+        let timeStr = m == 0
+            ? "\(h12) \(suffix)"
+            : String(format: "%d:%02d %@", h12, m, suffix)
+        return .todayLocked(unlocksAt: timeStr)
     }
 
     private var daySession: DaySession {
@@ -33,8 +72,13 @@ struct WorkoutView: View {
         ProgramPhase.current(startDate: store.programStartDate)
     }
 
+    // MARK: - Body
+
     var body: some View {
-        ScrollView {
+        let morningMode = displayMode(for: daySession.morning, on: selectedDate)
+        let eveningMode = displayMode(for: daySession.evening, on: selectedDate)
+
+        return ScrollView {
             VStack(spacing: 0) {
                 dayStrip
                     .padding(.bottom, 12)
@@ -43,30 +87,23 @@ struct WorkoutView: View {
                     .padding(.horizontal, 16)
                     .padding(.bottom, 12)
 
-                if isLocked(selectedDate) {
-                    lockedCard
-                        .padding(.horizontal, 16)
-                } else if isPreview(selectedDate) {
+                // Day-level banner: upcoming days only
+                if selectedDate.isFutureDay {
                     upcomingBanner
                         .padding(.horizontal, 16)
                         .padding(.bottom, 14)
-                    sessionBlock(session: daySession.morning, isPreview: true)
+                } else if store.isWorkoutMissed(for: selectedDate) {
+                    missedSessionBanner
                         .padding(.horizontal, 16)
                         .padding(.bottom, 14)
-                    sessionBlock(session: daySession.evening, isPreview: true)
-                        .padding(.horizontal, 16)
-                } else {
-                    if store.isWorkoutMissed(for: selectedDate) {
-                        missedSessionBanner
-                            .padding(.horizontal, 16)
-                            .padding(.bottom, 14)
-                    }
-                    sessionBlock(session: daySession.morning)
-                        .padding(.horizontal, 16)
-                        .padding(.bottom, 14)
-                    sessionBlock(session: daySession.evening)
-                        .padding(.horizontal, 16)
                 }
+
+                // Both sessions always visible — display mode controls interactivity
+                sessionBlock(session: daySession.morning, mode: morningMode)
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 14)
+                sessionBlock(session: daySession.evening, mode: eveningMode)
+                    .padding(.horizontal, 16)
 
                 Spacer(minLength: 32)
             }
@@ -78,8 +115,6 @@ struct WorkoutView: View {
         .toolbarBackground(Color.cardBackground, for: .navigationBar)
         .toolbarBackground(.visible, for: .navigationBar)
         .toolbarColorScheme(.dark, for: .navigationBar)
-        .onAppear { clearStaleIfLocked(selectedDate) }
-        .onChange(of: selectedDate) { date in clearStaleIfLocked(date) }
         .onReceive(Timer.publish(every: 30, on: .main, in: .common).autoconnect()) { _ in
             let m = WorkoutView.minuteOfDay()
             if m != currentMinute { currentMinute = m }
@@ -98,11 +133,7 @@ struct WorkoutView: View {
         }
     }
 
-    private func clearStaleIfLocked(_ date: Date) {
-        if isLocked(date) { store.clearWorkoutSets(for: date) }
-    }
-
-    // MARK: - Day strip — full 120-day program, scrollable
+    // MARK: - Day strip — full 120-day scrollable program strip
 
     private var dayStrip: some View {
         ScrollViewReader { proxy in
@@ -116,7 +147,6 @@ struct WorkoutView: View {
                 .padding(.horizontal, 16)
             }
             .onAppear {
-                // Delay slightly to ensure layout is complete before scrolling
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
                     proxy.scrollTo(today, anchor: .center)
                 }
@@ -132,22 +162,22 @@ struct WorkoutView: View {
     private func dayPill(for day: Date) -> some View {
         let isSelected = Calendar.current.isDate(day, inSameDayAs: selectedDate)
         let isToday    = day.isToday
-        let preview    = isPreview(day)
-        let locked     = isLocked(day)
+        let preview    = day.isFutureDay
         let missed     = store.isWorkoutMissed(for: day)
         let skipped    = store.isWorkoutSkipped(for: day)
         let session    = WorkoutSchedule.session(for: day, programStart: store.programStartDate)
-        let icon: String = locked ? "lock.fill" : (skipped ? "slash.circle" : session.morning.icon)
+        let icon       = skipped ? "slash.circle" : session.morning.icon
 
         let iconColor: Color = {
             if isSelected { return .black }
-            if missed  { return .orange }
-            if skipped { return .secondaryText.opacity(0.4) }
-            if preview { return .secondaryText.opacity(0.45) }
+            if missed     { return .orange }
+            if skipped    { return .secondaryText.opacity(0.4) }
+            if preview    { return .secondaryText.opacity(0.45) }
             return .secondaryText
         }()
 
-        let dotColor: Color = missed ? .orange : (skipped ? Color.secondaryText.opacity(0.35) : .clear)
+        let dotColor: Color = missed  ? .orange :
+                              skipped ? Color.secondaryText.opacity(0.35) : .clear
 
         return Button(action: { selectedDate = day }) {
             VStack(spacing: 2) {
@@ -163,7 +193,6 @@ struct WorkoutView: View {
                     .font(.system(size: 9))
                     .foregroundColor(iconColor)
 
-                // Status dot: orange = missed, dim = skipped, clear = normal
                 Circle()
                     .fill(dotColor)
                     .frame(width: 4, height: 4)
@@ -179,7 +208,7 @@ struct WorkoutView: View {
         .buttonStyle(.plain)
     }
 
-    // MARK: - Upcoming session preview banner
+    // MARK: - Upcoming session preview banner (future days)
 
     private var upcomingBanner: some View {
         let dayNum = store.calendarDayNumber(for: selectedDate)
@@ -204,7 +233,7 @@ struct WorkoutView: View {
         .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.accentBlue.opacity(0.25), lineWidth: 1))
     }
 
-    // MARK: - Missed session banner
+    // MARK: - Missed session banner (past days only)
 
     private var missedSessionBanner: some View {
         HStack(spacing: 10) {
@@ -294,21 +323,26 @@ struct WorkoutView: View {
         .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.cellBorder, lineWidth: 1))
     }
 
-    // MARK: - Session block (morning or evening)
+    // MARK: - Session block
 
     @ViewBuilder
-    private func sessionBlock(session: WorkoutSession, isPreview: Bool = false) -> some View {
+    private func sessionBlock(session: WorkoutSession, mode: SessionDisplayMode) -> some View {
+        let isReadOnly: Bool = {
+            switch mode { case .interactive: return false; default: return true }
+        }()
+
         VStack(alignment: .leading, spacing: 0) {
             // Session header
             HStack(spacing: 10) {
                 ZStack {
                     Circle()
-                        .fill(Color.accentGreen.opacity(isPreview ? 0.08 : 0.15))
+                        .fill(Color.accentGreen.opacity(isReadOnly ? 0.08 : 0.15))
                         .frame(width: 40, height: 40)
                     Image(systemName: session.icon)
                         .font(.system(size: 18))
-                        .foregroundColor(isPreview ? .accentGreen.opacity(0.5) : .accentGreen)
+                        .foregroundColor(isReadOnly ? .accentGreen.opacity(0.5) : .accentGreen)
                 }
+
                 VStack(alignment: .leading, spacing: 2) {
                     HStack(spacing: 6) {
                         Text(session.slot.uppercased())
@@ -317,8 +351,11 @@ struct WorkoutView: View {
                             .tracking(0.6)
                         Text(session.label)
                             .font(.system(size: 15, weight: .bold))
-                            .foregroundColor(isPreview ? .primaryText.opacity(0.65) : .primaryText)
-                        if isPreview {
+                            .foregroundColor(isReadOnly ? .primaryText.opacity(0.65) : .primaryText)
+
+                        // Status chip — only shown in read-only modes
+                        switch mode {
+                        case .upcoming:
                             Text("PREVIEW")
                                 .font(.system(size: 8, weight: .bold))
                                 .foregroundColor(.accentBlue)
@@ -326,9 +363,27 @@ struct WorkoutView: View {
                                 .padding(.vertical, 2)
                                 .background(Color.accentBlue.opacity(0.12))
                                 .cornerRadius(3)
+
+                        case .todayLocked(let time):
+                            HStack(spacing: 3) {
+                                Image(systemName: "clock")
+                                    .font(.system(size: 7, weight: .semibold))
+                                Text("UNLOCKS \(time)")
+                                    .font(.system(size: 8, weight: .bold))
+                            }
+                            .foregroundColor(.accentBlue)
+                            .padding(.horizontal, 5)
+                            .padding(.vertical, 2)
+                            .background(Color.accentBlue.opacity(0.12))
+                            .cornerRadius(3)
+
+                        case .interactive:
+                            EmptyView()
                         }
                     }
-                    if !session.isRest && !isPreview {
+
+                    // Sets progress — only in interactive mode
+                    if !session.isRest, case .interactive = mode {
                         let done  = session.exercises.reduce(0) { $0 + store.workoutSetsForExercise(date: selectedDate, exerciseID: $1.id).filter { $0.completed }.count }
                         let total = session.exercises.reduce(0) { $0 + $1.targetSets }
                         if total > 0 {
@@ -354,15 +409,15 @@ struct WorkoutView: View {
             if !session.isRest {
                 Divider().background(Color.cellBorder)
 
-                // Cardio guidance — interactive days only
-                if session.icon == "figure.run" && !isPreview {
-                    let mode  = store.intensityMode
-                    let color = Color(hex: mode.colorHex)
+                // Cardio guidance banner — interactive sessions only
+                if session.icon == "figure.run", case .interactive = mode {
+                    let intensityMode = store.intensityMode
+                    let color = Color(hex: intensityMode.colorHex)
                     HStack(spacing: 8) {
                         Image(systemName: "chart.line.uptrend.xyaxis")
                             .font(.system(size: 11))
                             .foregroundColor(color)
-                        Text(mode.cardioGuidance)
+                        Text(intensityMode.cardioGuidance)
                             .font(.system(size: 11))
                             .foregroundColor(.secondaryText)
                     }
@@ -372,16 +427,18 @@ struct WorkoutView: View {
                     Divider().background(Color.cellBorder)
                 }
 
-                if isPreview {
+                // Exercises — interactive: full set cards; read-only: preview rows
+                switch mode {
+                case .interactive:
                     ForEach(session.exercises) { exercise in
-                        PreviewExerciseRow(exercise: exercise)
+                        ExerciseCard(exercise: exercise, date: selectedDate)
                         if exercise.id != session.exercises.last?.id {
                             Divider().background(Color.cellBorder).padding(.leading, 12)
                         }
                     }
-                } else {
+                case .upcoming, .todayLocked:
                     ForEach(session.exercises) { exercise in
-                        ExerciseCard(exercise: exercise, date: selectedDate)
+                        PreviewExerciseRow(exercise: exercise)
                         if exercise.id != session.exercises.last?.id {
                             Divider().background(Color.cellBorder).padding(.leading, 12)
                         }
@@ -400,28 +457,6 @@ struct WorkoutView: View {
         )
     }
 
-    // MARK: - Locked card
-
-    private var lockedCard: some View {
-        VStack(spacing: 12) {
-            Image(systemName: "lock.fill")
-                .font(.system(size: 32))
-                .foregroundColor(.secondaryText)
-            Text("Locked until 6:59 AM")
-                .font(.system(size: 15, weight: .semibold))
-                .foregroundColor(.secondaryText)
-            Text("Workout tab opens with your morning session.")
-                .font(.system(size: 12))
-                .foregroundColor(.secondaryText)
-                .multilineTextAlignment(.center)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(32)
-        .background(Color.cardBackground)
-        .cornerRadius(12)
-        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.cellBorder, lineWidth: 1))
-    }
-
     private static func minuteOfDay() -> Int {
         let c = Calendar.current.dateComponents([.hour, .minute], from: Date())
         return (c.hour ?? 0) * 60 + (c.minute ?? 0)
@@ -429,8 +464,8 @@ struct WorkoutView: View {
 }
 
 // MARK: - PreviewExerciseRow
-// Read-only row shown on upcoming (future) days. Displays exercise name, sets, reps,
-// and estimated weight from the progression engine. No interactive set logging.
+// Read-only row shown on future days and today's sessions before their unlock time.
+// Displays exercise name, sets, reps, and estimated weight — no set logging.
 
 struct PreviewExerciseRow: View {
     let exercise: ExerciseDefinition
@@ -494,7 +529,6 @@ struct ExerciseCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // Header
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(exercise.name)
