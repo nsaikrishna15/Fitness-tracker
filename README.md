@@ -152,12 +152,3 @@ Delivered notifications are cleared automatically each time the app comes to for
 MIT License — © 2026 [debugmonk](https://debugmonk.com)
 
 See [LICENSE](./LICENSE) for full terms.
-
----
-
-## About
-
-Built by **debugmonk** — a developer channel focused on building real things fast.
-
-- Website: [debugmonk.com](https://debugmonk.com)
-- YouTube: coming soon
