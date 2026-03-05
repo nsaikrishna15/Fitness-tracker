@@ -278,7 +278,7 @@ struct SettingsView: View {
                                 .foregroundColor(.accentGreen)
                         }
                     }
-                    Text("FitTrack is an open-source iOS fitness tracker built by debugmonk. Source code available on GitHub.")
+                    Text("BodyPhase is an open-source iOS body transformation app built by debugmonk. Source code available on GitHub.")
                         .font(.system(size: 12))
                         .foregroundColor(.secondaryText)
                         .fixedSize(horizontal: false, vertical: true)

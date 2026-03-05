@@ -5,15 +5,15 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>FitTrack</string>
+	<string>BodyPhase</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
-	<string>com.debugmonk.fittrack</string>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>FitTrack</string>
+	<string>BodyPhase</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -23,9 +23,9 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSUserNotificationUsageDescription</key>
-	<string>FitTrack sends daily reminders to help you stay consistent with your habits.</string>
+	<string>BodyPhase sends daily reminders to help you stay consistent with your habits.</string>
 	<key>NSUserNotificationsUsageDescription</key>
-	<string>FitTrack sends daily reminders to help you stay consistent with your habits.</string>
+	<string>BodyPhase sends daily reminders to help you stay consistent with your habits.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
