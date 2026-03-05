@@ -125,6 +125,9 @@ struct ProgramDayStore: Codable {
     // Set of dateKey strings on which the user completed at least 1 workout set
     var completedWorkoutDays: Set<String> = []
 
+    // Set of dateKey strings the user explicitly skipped — no penalty, no advancement
+    var skippedWorkoutDays: Set<String> = []
+
     // Computed: number of days on which a workout was actually logged
     var activeDaysCount: Int { completedWorkoutDays.count }
 
@@ -133,6 +136,10 @@ struct ProgramDayStore: Codable {
 
     mutating func markDone(dateKey: String) {
         completedWorkoutDays.insert(dateKey)
+    }
+
+    mutating func markSkipped(dateKey: String) {
+        skippedWorkoutDays.insert(dateKey)
     }
 }
 

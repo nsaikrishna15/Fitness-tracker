@@ -355,6 +355,38 @@ final class HabitStore: ObservableObject {
         workoutSets.filter { $0.dateKey == date.dateKey }
     }
 
+    /// True if the date had a scheduled (non-rest) workout, no sets were logged, and it was not skipped.
+    func isWorkoutMissed(for date: Date) -> Bool {
+        guard date.isPastDay else { return false }
+        guard !programDayStore.skippedWorkoutDays.contains(date.dateKey) else { return false }
+        let session = WorkoutSchedule.session(for: date, programStart: programStartDate)
+        guard !session.morning.isRest else { return false }
+        return allWorkoutSets(for: date).filter { $0.completed }.isEmpty
+    }
+
+    /// True if the user explicitly skipped this date's workout.
+    func isWorkoutSkipped(for date: Date) -> Bool {
+        programDayStore.skippedWorkoutDays.contains(date.dateKey)
+    }
+
+    /// Mark a past workout session as intentionally skipped.
+    /// No progression penalty. Program day counter does not advance.
+    func skipWorkoutSession(for date: Date) {
+        programDayStore.markSkipped(dateKey: date.dateKey)
+        saveProgramDayStore()
+        objectWillChange.send()
+    }
+
+    /// Calendar day number (1–120) for a given date relative to program start.
+    /// Used for the "Day X of 120" label in the workout preview banner.
+    func calendarDayNumber(for date: Date) -> Int {
+        let cal = Calendar.current
+        let diff = cal.dateComponents([.day],
+                                      from: cal.startOfDay(for: programStartDate),
+                                      to: cal.startOfDay(for: date)).day ?? 0
+        return max(1, min(diff + 1, 120))
+    }
+
     /// Removes all workout sets for a date (used to clear stale data on locked days).
     func clearWorkoutSets(for date: Date) {
         let key = date.dateKey

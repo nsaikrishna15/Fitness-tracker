@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!--
+        Required API usage declarations (Apple Privacy Manifest, required since May 2024).
+        https://developer.apple.com/documentation/bundleresources/privacy_manifest_files/describing_use_of_required_reason_api
+    -->
+    <key>NSPrivacyAccessedAPITypes</key>
+    <array>
+        <dict>
+            <!-- UserDefaults: used to persist user profile, workout sets, and habit completions on device. -->
+            <key>NSPrivacyAccessedAPIType</key>
+            <string>NSPrivacyAccessedAPICategoryUserDefaults</string>
+            <key>NSPrivacyAccessedAPITypeReasons</key>
+            <array>
+                <!-- CA92.1: Read/write private app settings accessible only to this app. -->
+                <string>CA92.1</string>
+            </array>
+        </dict>
+    </array>
+
+    <!--
+        Data collection declarations.
+        All data (body weight, workout logs, habit completions) is stored exclusively
+        on the user's device via UserDefaults and optionally synced to the user's own
+        iCloud Key-Value Store. No data is transmitted to any developer server.
+        No analytics, advertising, or third-party SDKs are used.
+    -->
+    <key>NSPrivacyCollectedDataTypes</key>
+    <array>
+        <dict>
+            <!-- Health and fitness data (body weight, body composition estimates, workout logs). -->
+            <key>NSPrivacyCollectedDataType</key>
+            <string>NSPrivacyCollectedDataTypeHealth</string>
+            <!-- Not linked to user identity — stored locally / in user's own iCloud account only. -->
+            <key>NSPrivacyCollectedDataTypeLinked</key>
+            <false/>
+            <!-- Not used for tracking across apps or websites. -->
+            <key>NSPrivacyCollectedDataTypeTracking</key>
+            <false/>
+            <key>NSPrivacyCollectedDataTypePurposes</key>
+            <array>
+                <!-- Solely to provide the app's core body transformation tracking functionality. -->
+                <string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+            </array>
+        </dict>
+    </array>
+
+    <!-- This app does not track users across apps or websites. -->
+    <key>NSPrivacyTracking</key>
+    <false/>
+</dict>
+</plist>

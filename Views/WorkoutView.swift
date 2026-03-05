@@ -4,13 +4,24 @@ struct WorkoutView: View {
     @EnvironmentObject private var store: HabitStore
     @State private var selectedDate: Date = Calendar.current.startOfDay(for: Date())
     @State private var currentMinute: Int = WorkoutView.minuteOfDay()
+    @State private var showSkipConfirmation: Bool = false
 
-    private var weekDays: [Date] { selectedDate.startOfWeek().weekDays() }
+    private var today: Date { Calendar.current.startOfDay(for: Date()) }
 
-    /// Workout tab unlocks at 6:59 AM today; past = always open; future = always locked.
+    /// All 120 calendar days of the program, from program start date.
+    private var allProgramDays: [Date] {
+        let cal = Calendar.current
+        let start = cal.startOfDay(for: store.programStartDate)
+        return (0..<120).compactMap { cal.date(byAdding: .day, value: $0, to: start) }
+    }
+
+    /// Future days in the program — shown in read-only preview mode so the user
+    /// can plan equipment and mentally prepare. No set logging allowed.
+    private func isPreview(_ date: Date) -> Bool { date.isFutureDay }
+
+    /// Today before 6:59 AM — show locked card; sets cannot be logged yet.
     private func isLocked(_ date: Date) -> Bool {
-        if date.isPastDay    { return false }
-        if date.isFutureDay  { return true }
+        guard !date.isPastDay, !date.isFutureDay else { return false }
         return currentMinute < (6 * 60 + 59)
     }
 
@@ -35,11 +46,24 @@ struct WorkoutView: View {
                 if isLocked(selectedDate) {
                     lockedCard
                         .padding(.horizontal, 16)
+                } else if isPreview(selectedDate) {
+                    upcomingBanner
+                        .padding(.horizontal, 16)
+                        .padding(.bottom, 14)
+                    sessionBlock(session: daySession.morning, isPreview: true)
+                        .padding(.horizontal, 16)
+                        .padding(.bottom, 14)
+                    sessionBlock(session: daySession.evening, isPreview: true)
+                        .padding(.horizontal, 16)
                 } else {
+                    if store.isWorkoutMissed(for: selectedDate) {
+                        missedSessionBanner
+                            .padding(.horizontal, 16)
+                            .padding(.bottom, 14)
+                    }
                     sessionBlock(session: daySession.morning)
                         .padding(.horizontal, 16)
                         .padding(.bottom, 14)
-
                     sessionBlock(session: daySession.evening)
                         .padding(.horizontal, 16)
                 }
@@ -60,20 +84,165 @@ struct WorkoutView: View {
             let m = WorkoutView.minuteOfDay()
             if m != currentMinute { currentMinute = m }
         }
+        .confirmationDialog(
+            "Skip this session?",
+            isPresented: $showSkipConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("Skip Session", role: .destructive) {
+                store.skipWorkoutSession(for: selectedDate)
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This session will be marked skipped. No progression penalty. The program day counter does not advance.")
+        }
     }
 
     private func clearStaleIfLocked(_ date: Date) {
         if isLocked(date) { store.clearWorkoutSets(for: date) }
     }
 
+    // MARK: - Day strip — full 120-day program, scrollable
+
+    private var dayStrip: some View {
+        ScrollViewReader { proxy in
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 6) {
+                    ForEach(allProgramDays, id: \.self) { day in
+                        dayPill(for: day)
+                            .id(day)
+                    }
+                }
+                .padding(.horizontal, 16)
+            }
+            .onAppear {
+                // Delay slightly to ensure layout is complete before scrolling
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                    proxy.scrollTo(today, anchor: .center)
+                }
+            }
+            .onChange(of: selectedDate) { date in
+                withAnimation(.easeInOut(duration: 0.25)) {
+                    proxy.scrollTo(date, anchor: .center)
+                }
+            }
+        }
+    }
+
+    private func dayPill(for day: Date) -> some View {
+        let isSelected = Calendar.current.isDate(day, inSameDayAs: selectedDate)
+        let isToday    = day.isToday
+        let preview    = isPreview(day)
+        let locked     = isLocked(day)
+        let missed     = store.isWorkoutMissed(for: day)
+        let skipped    = store.isWorkoutSkipped(for: day)
+        let session    = WorkoutSchedule.session(for: day, programStart: store.programStartDate)
+        let icon: String = locked ? "lock.fill" : (skipped ? "slash.circle" : session.morning.icon)
+
+        let iconColor: Color = {
+            if isSelected { return .black }
+            if missed  { return .orange }
+            if skipped { return .secondaryText.opacity(0.4) }
+            if preview { return .secondaryText.opacity(0.45) }
+            return .secondaryText
+        }()
+
+        let dotColor: Color = missed ? .orange : (skipped ? Color.secondaryText.opacity(0.35) : .clear)
+
+        return Button(action: { selectedDate = day }) {
+            VStack(spacing: 2) {
+                Text(day.shortWeekdayLabel)
+                    .font(.system(size: 9, weight: .bold))
+                    .foregroundColor(isSelected ? .black : (isToday ? .accentGreen : .secondaryText))
+
+                Text(day.dayOfMonthLabel)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundColor(isSelected ? .black : (isToday ? .accentGreen : .primaryText))
+
+                Image(systemName: icon)
+                    .font(.system(size: 9))
+                    .foregroundColor(iconColor)
+
+                // Status dot: orange = missed, dim = skipped, clear = normal
+                Circle()
+                    .fill(dotColor)
+                    .frame(width: 4, height: 4)
+            }
+            .frame(width: 42, height: 62)
+            .background(
+                isSelected ? Color.accentGreen :
+                (isToday ? Color.accentGreen.opacity(0.1) : Color.cardBackground)
+            )
+            .cornerRadius(8)
+            .opacity(preview && !isSelected ? 0.65 : 1.0)
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: - Upcoming session preview banner
+
+    private var upcomingBanner: some View {
+        let dayNum = store.calendarDayNumber(for: selectedDate)
+        return HStack(spacing: 10) {
+            Image(systemName: "calendar.badge.clock")
+                .font(.system(size: 14))
+                .foregroundColor(.accentBlue)
+            VStack(alignment: .leading, spacing: 1) {
+                Text("UPCOMING — DAY \(dayNum) OF 120")
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundColor(.accentBlue)
+                    .tracking(0.5)
+                Text("Plan your equipment. Logging opens on the day.")
+                    .font(.system(size: 11))
+                    .foregroundColor(.secondaryText)
+            }
+            Spacer()
+        }
+        .padding(12)
+        .background(Color.accentBlue.opacity(0.08))
+        .cornerRadius(10)
+        .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.accentBlue.opacity(0.25), lineWidth: 1))
+    }
+
+    // MARK: - Missed session banner
+
+    private var missedSessionBanner: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.system(size: 14))
+                .foregroundColor(.orange)
+            VStack(alignment: .leading, spacing: 1) {
+                Text("SESSION NOT LOGGED")
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundColor(.orange)
+                    .tracking(0.5)
+                Text("Log it now, or skip to remove this flag.")
+                    .font(.system(size: 11))
+                    .foregroundColor(.secondaryText)
+            }
+            Spacer()
+            Button("Skip") { showSkipConfirmation = true }
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundColor(.orange)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(Color.orange.opacity(0.12))
+                .cornerRadius(6)
+        }
+        .padding(12)
+        .background(Color.orange.opacity(0.06))
+        .cornerRadius(10)
+        .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.orange.opacity(0.25), lineWidth: 1))
+    }
+
     // MARK: - Phase banner
 
     private var phaseBanner: some View {
-        let programDay  = store.activeProgramDay
-        let clamped     = max(1, min(programDay, 120))
-        let isDeload    = store.isDeloadWeek
-        let mode        = store.intensityMode
-        let modeColor   = Color(hex: mode.colorHex)
+        let programDay = store.activeProgramDay
+        let clamped    = max(1, min(programDay, 120))
+        let isDeload   = store.isDeloadWeek
+        let mode       = store.intensityMode
+        let modeColor  = Color(hex: mode.colorHex)
 
         return VStack(spacing: 6) {
             HStack(spacing: 10) {
@@ -90,7 +259,6 @@ struct WorkoutView: View {
                         .font(.system(size: 11))
                         .foregroundColor(isDeload ? .orange : .secondaryText)
                         .lineLimit(1)
-                    // Intensity mode line
                     HStack(spacing: 4) {
                         Text(mode.label)
                             .font(.system(size: 10, weight: .bold))
@@ -126,56 +294,20 @@ struct WorkoutView: View {
         .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.cellBorder, lineWidth: 1))
     }
 
-    // MARK: - Day strip
-
-    private var dayStrip: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
-                ForEach(weekDays, id: \.self) { day in
-                    let isSelected = Calendar.current.isDate(day, inSameDayAs: selectedDate)
-                    let isToday    = day.isToday
-                    let locked     = isLocked(day)
-                    let session    = WorkoutSchedule.session(for: day, programStart: store.programStartDate)
-                    // Use morning session icon for the strip
-                    let stripIcon  = locked ? "lock.fill" : session.morning.icon
-
-                    Button(action: { selectedDate = day }) {
-                        VStack(spacing: 3) {
-                            Text(day.shortWeekdayLabel)
-                                .font(.system(size: 9, weight: .bold))
-                                .foregroundColor(isSelected ? .black : .secondaryText)
-                            Text(day.dayOfMonthLabel)
-                                .font(.system(size: 15, weight: .semibold))
-                                .foregroundColor(isSelected ? .black : (isToday ? .accentGreen : .primaryText))
-                            Image(systemName: stripIcon)
-                                .font(.system(size: 9))
-                                .foregroundColor(isSelected ? .black : (locked ? .secondaryText.opacity(0.4) : .secondaryText))
-                        }
-                        .frame(width: 44, height: 56)
-                        .background(isSelected ? Color.accentGreen : (isToday ? Color.accentGreen.opacity(0.1) : Color.cardBackground))
-                        .cornerRadius(8)
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-            .padding(.horizontal, 16)
-        }
-    }
-
     // MARK: - Session block (morning or evening)
 
     @ViewBuilder
-    private func sessionBlock(session: WorkoutSession) -> some View {
+    private func sessionBlock(session: WorkoutSession, isPreview: Bool = false) -> some View {
         VStack(alignment: .leading, spacing: 0) {
-            // Slot header
+            // Session header
             HStack(spacing: 10) {
                 ZStack {
                     Circle()
-                        .fill(Color.accentGreen.opacity(0.15))
+                        .fill(Color.accentGreen.opacity(isPreview ? 0.08 : 0.15))
                         .frame(width: 40, height: 40)
                     Image(systemName: session.icon)
                         .font(.system(size: 18))
-                        .foregroundColor(.accentGreen)
+                        .foregroundColor(isPreview ? .accentGreen.opacity(0.5) : .accentGreen)
                 }
                 VStack(alignment: .leading, spacing: 2) {
                     HStack(spacing: 6) {
@@ -185,9 +317,18 @@ struct WorkoutView: View {
                             .tracking(0.6)
                         Text(session.label)
                             .font(.system(size: 15, weight: .bold))
-                            .foregroundColor(.primaryText)
+                            .foregroundColor(isPreview ? .primaryText.opacity(0.65) : .primaryText)
+                        if isPreview {
+                            Text("PREVIEW")
+                                .font(.system(size: 8, weight: .bold))
+                                .foregroundColor(.accentBlue)
+                                .padding(.horizontal, 5)
+                                .padding(.vertical, 2)
+                                .background(Color.accentBlue.opacity(0.12))
+                                .cornerRadius(3)
+                        }
                     }
-                    if !session.isRest {
+                    if !session.isRest && !isPreview {
                         let done  = session.exercises.reduce(0) { $0 + store.workoutSetsForExercise(date: selectedDate, exerciseID: $1.id).filter { $0.completed }.count }
                         let total = session.exercises.reduce(0) { $0 + $1.targetSets }
                         if total > 0 {
@@ -210,13 +351,11 @@ struct WorkoutView: View {
                 }
             )
 
-            if session.isRest {
-                // Rest card — just the header above is enough
-            } else {
+            if !session.isRest {
                 Divider().background(Color.cellBorder)
 
-                // Cardio guidance banner — shown on cardio sessions
-                if session.icon == "figure.run" {
+                // Cardio guidance — interactive days only
+                if session.icon == "figure.run" && !isPreview {
                     let mode  = store.intensityMode
                     let color = Color(hex: mode.colorHex)
                     HStack(spacing: 8) {
@@ -233,10 +372,19 @@ struct WorkoutView: View {
                     Divider().background(Color.cellBorder)
                 }
 
-                ForEach(session.exercises) { exercise in
-                    ExerciseCard(exercise: exercise, date: selectedDate)
-                    if exercise.id != session.exercises.last?.id {
-                        Divider().background(Color.cellBorder).padding(.leading, 12)
+                if isPreview {
+                    ForEach(session.exercises) { exercise in
+                        PreviewExerciseRow(exercise: exercise)
+                        if exercise.id != session.exercises.last?.id {
+                            Divider().background(Color.cellBorder).padding(.leading, 12)
+                        }
+                    }
+                } else {
+                    ForEach(session.exercises) { exercise in
+                        ExerciseCard(exercise: exercise, date: selectedDate)
+                        if exercise.id != session.exercises.last?.id {
+                            Divider().background(Color.cellBorder).padding(.leading, 12)
+                        }
                     }
                 }
             }
@@ -280,6 +428,61 @@ struct WorkoutView: View {
     }
 }
 
+// MARK: - PreviewExerciseRow
+// Read-only row shown on upcoming (future) days. Displays exercise name, sets, reps,
+// and estimated weight from the progression engine. No interactive set logging.
+
+struct PreviewExerciseRow: View {
+    let exercise: ExerciseDefinition
+    @EnvironmentObject private var store: HabitStore
+
+    var body: some View {
+        HStack(spacing: 0) {
+            VStack(alignment: .leading, spacing: 3) {
+                Text(exercise.name)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(.primaryText.opacity(0.65))
+
+                HStack(spacing: 4) {
+                    Text("\(exercise.targetSets) sets · \(exercise.targetReps)")
+                        .font(.system(size: 11))
+                        .foregroundColor(.secondaryText.opacity(0.7))
+
+                    if exercise.isBodyweight {
+                        Text("· bodyweight")
+                            .font(.system(size: 11))
+                            .foregroundColor(.secondaryText.opacity(0.5))
+                    } else if let kg = store.suggestedWeight(for: exercise.id) {
+                        Text("· \(formattedKg(kg)) kg est.")
+                            .font(.system(size: 11))
+                            .foregroundColor(.secondaryText.opacity(0.7))
+                    }
+                }
+
+                if !exercise.note.isEmpty {
+                    Text(exercise.note)
+                        .font(.system(size: 10))
+                        .foregroundColor(.secondaryText.opacity(0.45))
+                        .lineLimit(2)
+                }
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 10)
+
+            Spacer()
+
+            Image(systemName: "lock.circle")
+                .font(.system(size: 18))
+                .foregroundColor(.secondaryText.opacity(0.25))
+                .padding(.trailing, 14)
+        }
+    }
+
+    private func formattedKg(_ kg: Double) -> String {
+        kg == kg.rounded() ? String(Int(kg)) : String(format: "%.1f", kg)
+    }
+}
+
 // MARK: - ExerciseCard
 
 struct ExerciseCard: View {
@@ -297,7 +500,6 @@ struct ExerciseCard: View {
                     Text(exercise.name)
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundColor(.primaryText)
-                    // Show progression-engine suggested weight, or "bodyweight"
                     let weightLabel: String = {
                         if exercise.isBodyweight { return "bodyweight" }
                         if let kg = suggested { return "\(formattedKg(kg)) kg suggested" }
@@ -375,7 +577,6 @@ struct SetRow: View {
         store.workoutSetsForExercise(date: date, exerciseID: exercise.id).first { $0.setNumber == setNumber }
     }
 
-    // Placeholder shown in kg field: suggested weight from progression engine
     private var kgPlaceholder: String {
         if let kg = suggestedKg {
             return kg == kg.rounded() ? String(Int(kg)) : String(format: "%.1f", kg)
@@ -489,7 +690,6 @@ struct SetRow: View {
             completed:  nowDone
         )
         store.upsertWorkoutSet(s)
-        // When marking undone, record a failure for progression engine
         if !nowDone {
             store.recordExerciseCompletion(exerciseID: exercise.id,
                                            allSetsCompleted: false,
