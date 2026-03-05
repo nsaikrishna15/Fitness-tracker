@@ -176,7 +176,7 @@ struct OnboardingView: View {
                         fieldCard {
                             VStack(alignment: .leading, spacing: 10) {
                                 label("Preferred Protein Source")
-                                Text("Used to calculate meal amounts in the Diet tab.")
+                                Text("Used for lunch & dinner amounts. Eggs are always included at breakfast and snack.")
                                     .font(.system(size: 11))
                                     .foregroundColor(.secondaryText)
                                 HStack(spacing: 10) {
@@ -185,9 +185,6 @@ struct OnboardingView: View {
                                     }
                                     proteinButton("Fish", selected: preferredProtein == "fish") {
                                         preferredProtein = "fish"
-                                    }
-                                    proteinButton("Eggs", selected: preferredProtein == "eggs") {
-                                        preferredProtein = "eggs"
                                     }
                                 }
                             }

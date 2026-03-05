@@ -143,13 +143,17 @@ struct SettingsView: View {
 
                 // Preferred Protein
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Preferred Protein")
-                        .font(.system(size: 14))
-                        .foregroundColor(.primaryText)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Preferred Protein")
+                            .font(.system(size: 14))
+                            .foregroundColor(.primaryText)
+                        Text("Lunch & dinner. Eggs always included at breakfast + snack.")
+                            .font(.system(size: 11))
+                            .foregroundColor(.secondaryText)
+                    }
                     Picker("", selection: $store.preferredProtein) {
                         Text("Chicken").tag("chicken")
                         Text("Fish").tag("fish")
-                        Text("Eggs").tag("eggs")
                     }
                     .pickerStyle(.segmented)
                 }

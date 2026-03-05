@@ -37,7 +37,6 @@ struct DietView: View {
 
                 sectionHeader("MEAL PLAN", icon: "fork.knife")
                 ForEach(mealPlan(from: computedMeals, protein: store.preferredProtein)) { meal in MealCard(meal: meal) }
-
                 sectionHeader("FRUIT ROTATION", icon: "leaf.fill")
                 fruitCard(isWeekA: isWeekA)
 
@@ -48,7 +47,7 @@ struct DietView: View {
                 InfoCard(rows: supplementPlan, accentColor: .accentGreen)
 
                 sectionHeader("WEEKLY MEAL PREP", icon: "bag.fill")
-                prepCard
+                prepCard(protein: store.preferredProtein)
             }
             .padding(16)
         }
@@ -299,9 +298,10 @@ struct DietView: View {
 
     // MARK: - Prep card
 
-    private var prepCard: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            ForEach(prepSections) { section in
+    private func prepCard(protein: String) -> some View {
+        let sections = buildPrepSections(protein: protein)
+        return VStack(alignment: .leading, spacing: 0) {
+            ForEach(sections) { section in
                 VStack(alignment: .leading, spacing: 8) {
                     HStack(spacing: 8) {
                         Image(systemName: section.icon)
@@ -344,7 +344,7 @@ struct DietView: View {
                 }
                 .padding(14)
 
-                if section.id != prepSections.last?.id {
+                if section.id != sections.last?.id {
                     Divider().background(Color.cellBorder)
                 }
             }
@@ -392,42 +392,58 @@ struct PrepSection: Identifiable {
 
 // MARK: - Meal data — macros sourced from computed DietPlan.mealSplit
 // Order: Pre-Workout (0) / Breakfast (1) / Lunch (2) / Snack (3) / Dinner (4)
+//
+// Protein logic:
+//   Breakfast + Snack → always eggs (easy to cook, always on hand)
+//   Lunch + Dinner    → chicken (default) or fish (alternate), per user preference
 
 private func mealPlan(from m: [DietPlan.MealMacros], protein: String) -> [MealItem] {
-    // Pre-compute dynamic amounts for meals that need them
-    let bFoods = m.count > 1 ? DietPlan.foodAmounts(mealMacros: m[1], preferredProtein: protein, isBreakfast: true)  : nil
+    // Breakfast: always eggs regardless of lunch/dinner preference
+    let bFoods = m.count > 1 ? DietPlan.foodAmounts(mealMacros: m[1], preferredProtein: "eggs", isBreakfast: true) : nil
     let lFoods = m.count > 2 ? DietPlan.foodAmounts(mealMacros: m[2], preferredProtein: protein, isBreakfast: false) : nil
     let dFoods = m.count > 4 ? DietPlan.foodAmounts(mealMacros: m[4], preferredProtein: protein, isBreakfast: false) : nil
 
-    // Breakfast protein line
+    // Breakfast protein — always eggs, scale count to target
     let bProteinLine: String = {
-        guard let f = bFoods else { return "3 whole eggs + 2 egg whites — boil same morning, 10 min" }
-        switch protein {
-        case "eggs":   return "\(f.proteinSourceGrams) whole eggs — boil same morning, 10 min"
-        case "fish":   return "\(f.proteinSourceGrams)g white fish — pan-fry or poach, 8 min"
-        default:       return "\(f.proteinSourceGrams)g chicken breast — from batch cook, reheat 2 min"
+        let count = bFoods?.proteinSourceGrams ?? 5
+        if count <= 4 {
+            return "\(count) whole eggs — boil or scramble same morning"
+        } else {
+            // 3 whole + remainder as whites keeps it practical
+            let whites = count - 3
+            return "3 whole eggs + \(whites) egg whites — boil same morning, 10 min"
         }
     }()
-    let bCarbLine = bFoods.map { "\($0.carbsGrams)g \($0.carbsLabel) cooked in water (microwave, 3 min)" }
+    let bCarbLine = bFoods.map { "\($0.carbsGrams)g \($0.carbsLabel) cooked in water (microwave, 3 min) + banana sliced in" }
         ?? "50g dry oats cooked in water (microwave, 3 min) + 1 banana sliced in"
 
-    // Lunch protein line
+    // Lunch protein — chicken or fish from batch
     let lProteinLine: String = {
-        guard let f = lFoods else { return "200g chicken breast — from Sunday or Wednesday batch" }
-        if f.isEggs { return "\(f.proteinSourceGrams) hard-boiled eggs — from batch cook" }
-        return "\(f.proteinSourceGrams)g \(f.proteinSourceLabel) — from Sunday or Wednesday batch"
+        guard let f = lFoods else {
+            return protein == "fish" ? "180g white fish (tilapia / basa) — from batch or cook fresh" : "200g chicken breast — from Sunday or Wednesday batch"
+        }
+        return "\(f.proteinSourceGrams)g \(f.proteinSourceLabel) — from batch cook, reheat 2 min"
     }()
     let lCarbLine = lFoods.map { "\($0.carbsGrams)g \($0.carbsLabel) cooked fresh (→ ~\(Int(Double($0.carbsGrams) * 2.2))g cooked)" }
         ?? "90g dry basmati rice cooked fresh (→ ~200g cooked)"
 
-    // Dinner protein line
+    // Dinner protein — chicken or fish
     let dProteinLine: String = {
-        guard let f = dFoods else { return "170g chicken breast or 180g white fish (tilapia / basa)" }
-        if f.isEggs { return "\(f.proteinSourceGrams) whole eggs — scrambled or omelette with olive oil" }
+        guard let f = dFoods else {
+            return protein == "fish" ? "180g white fish (tilapia / basa) — pan-fry with olive oil" : "170g chicken breast — grilled or pan-fried"
+        }
         return "\(f.proteinSourceGrams)g \(f.proteinSourceLabel) — grilled or pan-fried"
     }()
     let dCarbLine = dFoods.map { "\($0.carbsGrams)g \($0.carbsLabel) cooked fresh OR 1 medium sweet potato OR 2 rotis" }
         ?? "90g dry rice cooked fresh OR 1 medium sweet potato OR 2 rotis"
+
+    let lunchNote = protein == "fish"
+        ? "Fish cooks in 8 min (3 min each side, medium-high heat). Rice takes 12 min — start it first. Veg from the fridge, 2 min microwave."
+        : "Rice cooks fresh daily — start it when you get in, 12 min. Chicken and veg come straight from the fridge, 2 min microwave. This is the largest meal of the day — eat it properly, not at a desk."
+
+    let dinnerNote = protein == "fish"
+        ? "Pan-fry the fish in olive oil — 3 min each side, done. Salad always fresh. Olive oil provides healthy fats for hormone production."
+        : "Dinner is hearty — you've worked out and need to recover overnight. Olive oil provides healthy fats for hormone production. Salad always fresh."
 
     return [
         MealItem(
@@ -448,7 +464,7 @@ private func mealPlan(from m: [DietPlan.MealMacros], protein: String) -> [MealIt
                 "1 Thorne Basic Nutrients capsule",
             ],
             macros: m.count > 1 ? m[1].summary : "",
-            notes: "Quick morning cook — protein and oats can be done in parallel. The banana goes into the oats, not as a separate snack."
+            notes: "Eggs and oats can cook in parallel — oats in the microwave (3 min), eggs on the stove (10 min). The banana goes into the oats, not as a separate snack. Scrambled eggs work equally well."
         ),
         MealItem(
             time: "12:30 PM", name: "Lunch",
@@ -458,16 +474,16 @@ private func mealPlan(from m: [DietPlan.MealMacros], protein: String) -> [MealIt
                 "Steamed broccoli + carrot — batch-cooked, reheat 2 min",
             ],
             macros: m.count > 2 ? m[2].summary : "",
-            notes: "Rice cooks fresh daily — start it when you get in, 12 min. Protein and veg come straight from the fridge, 2 min microwave. This is the largest meal of the day — eat it properly, not at a desk."
+            notes: lunchNote
         ),
         MealItem(
             time: "4:30 PM", name: "Snack",
             ingredients: [
-                "Option A: 180g plain Greek yogurt + 15g almonds",
-                "Option B: 2 hard-boiled eggs + 20g almonds",
+                "2–3 hard-boiled eggs + 20g almonds (from batch-boiled eggs)",
+                "OR: 180g plain Greek yogurt + 15g almonds",
             ],
             macros: m.count > 3 ? m[3].summary : "",
-            notes: "Pick one option, not both. Pre-bag almonds on Sunday into 7 daily portions so you don't have to think about it mid-afternoon."
+            notes: "Eggs are always in the fridge from your batch cook — grab and go. Pre-bag almonds on Sunday into 7 daily portions so you don't have to think about it mid-afternoon."
         ),
         MealItem(
             time: "7:30 PM", name: "Dinner",
@@ -475,11 +491,11 @@ private func mealPlan(from m: [DietPlan.MealMacros], protein: String) -> [MealIt
                 dProteinLine,
                 "Fresh salad: lettuce + cucumber + tomato + lemon (3 min to chop)",
                 dCarbLine,
-                "1 tbsp olive oil on salad or used to cook the protein",
+                "1 tbsp olive oil on salad or to cook the protein",
                 "1 Thorne Basic Nutrients capsule",
             ],
             macros: m.count > 4 ? m[4].summary : "",
-            notes: "Dinner is hearty — you've worked out and need to recover overnight. Olive oil provides healthy fats for hormone production. Salad always fresh."
+            notes: dinnerNote
         ),
     ]
 }
@@ -492,79 +508,123 @@ private let supplementPlan: [(String, String)] = [
     ("Note",         "On rest days skip the pre-workout shake. Add 30g oats to breakfast instead."),
 ]
 
-private let prepSections: [PrepSection] = [
-    PrepSection(
-        icon: "calendar", title: "What you cook, and when",
-        badge: nil,
-        items: [
-            "Sunday — big cook: covers Sunday, Monday, Tuesday",
-            "Wednesday — refresh cook: covers Wednesday, Thursday, Friday",
-            "Saturday — covers itself only, or eat out",
-            "Rice, eggs, salad: always cooked or assembled fresh the same day",
-        ],
-        note: "Everything fits in one fridge shelf across 3 meal-prep containers labelled by day."
-    ),
-    PrepSection(
+private func buildPrepSections(protein: String) -> [PrepSection] {
+    let isFish = protein == "fish"
+
+    let sundayCook = PrepSection(
         icon: "flame", title: "Sunday Cook",
         badge: "SUN",
-        items: [
+        items: isFish ? [
+            "Buy 600g fresh tilapia or basa — covers Sun + Mon (fish doesn't keep more than 2 days cooked)",
+            "Pan-fry in batches: 3 min each side on medium-high, season with lemon + cumin + salt",
+            "Portion into containers labelled SUN / MON — fridge immediately after cooling",
+            "Steam 400g broccoli + 300g carrot — portion into 3 lunch containers",
+            "Hard-boil 14 eggs — leave unpeeled in fridge (lasts all week)",
+            "Pre-bag 7 × 15g almond portions into small zip bags",
+        ] : [
             "Grill 1.1kg raw chicken breast — comes to roughly 800g cooked",
             "Season with cumin, garlic powder, salt, light olive oil spray",
-            "Portion into 200g lunch + 170g dinner bags, label MON / TUE / WED-L",
+            "Portion into lunch + dinner bags, label MON / TUE / WED-L",
             "Steam 400g broccoli + 300g carrot — portion into 3 lunch containers",
-            "Hard-boil 12 eggs — leave unpeeled in fridge",
+            "Hard-boil 14 eggs — leave unpeeled in fridge (lasts all week)",
             "Pre-bag 7 × 15g almond portions into small zip bags",
         ],
-        note: "Cooked chicken: 4 days max in fridge. Steamed veg: 3–4 days. Boiled eggs unpeeled: 7 days."
-    ),
-    PrepSection(
-        icon: "arrow.clockwise", title: "Wednesday Refresh",
-        badge: "WED",
-        items: [
+        note: isFish
+            ? "Cooked fish: 2 days max in fridge — buy again Tuesday. Steamed veg: 3–4 days. Boiled eggs unpeeled: 7 days."
+            : "Cooked chicken: 4 days max in fridge. Steamed veg: 3–4 days. Boiled eggs unpeeled: 7 days."
+    )
+
+    let midweekRefresh = PrepSection(
+        icon: "arrow.clockwise", title: isFish ? "Tuesday + Thursday Refresh" : "Wednesday Refresh",
+        badge: isFish ? "TUE/THU" : "WED",
+        items: isFish ? [
+            "Buy another 600g fish on Tuesday — covers Tue + Wed",
+            "Buy 600g more on Thursday — covers Thu + Fri",
+            "Same cook method: pan-fry in batches, 3 min each side",
+            "Steam capsicum + zucchini this time for variety",
+            "Top up eggs if running below 6",
+            "Restock: rice, yogurt, salad veg, almonds, this week's fruit",
+        ] : [
             "Grill another 1.1kg raw chicken breast — same method as Sunday",
             "Steam broccoli + capsicum this time for variety",
             "Hard-boil 6 more eggs if running low",
             "Restock: buy rice, yogurt, salad veg, almonds, and this week's fruit",
             "Label containers THU / FRI / SAT",
         ],
-        note: "Takes around 45 minutes. Put it on while you're doing something else."
-    ),
-    PrepSection(
-        icon: "water.waves", title: "Rice — Cook Fresh Daily",
-        badge: "DAILY",
-        items: [
-            "Lunch: 90g dry basmati — 1 part rice to 1.5 parts water",
-            "Dinner: 90g dry basmati — same method, same time",
-            "Bring to boil, lid on, low heat, 12 minutes, do not lift the lid",
-            "Comes to roughly 200g cooked per cook — one serving",
-            "Do not refrigerate and reheat. Refrigerated rice turns dense and starchy.",
-        ],
-        note: nil
-    ),
-    PrepSection(
-        icon: "leaf", title: "Salad — Assemble Fresh Daily",
-        badge: "DAILY",
-        items: [
-            "Quarter iceberg lettuce, half cucumber, one tomato — roughly chop",
-            "Squeeze of lemon, pinch of salt, optional half tbsp olive oil",
-            "Three minutes start to finish. Do not pre-make — lettuce wilts badly.",
-        ],
-        note: nil
-    ),
-    PrepSection(
-        icon: "snowflake", title: "Storage Reference",
-        badge: nil,
-        items: [
-            "Cooked chicken — airtight container, fridge, 4 days maximum",
-            "Steamed vegetables — airtight container, fridge, 3–4 days",
-            "Boiled eggs unpeeled — fridge, up to 7 days",
-            "Greek yogurt — original pot, check use-by date",
-            "Almonds — pre-portioned bags, room temperature is fine",
-            "Dry rice and oats — pantry, no expiry concern",
-        ],
-        note: "If chicken smells off or looks grey — bin it without hesitation. Never worth the risk."
-    ),
-]
+        note: isFish
+            ? "Fish cooks in under 10 minutes — do it the evening before or morning of. No long batch session needed."
+            : "Takes around 45 minutes. Put it on while you're doing something else."
+    )
+
+    let storageItems: [String] = isFish ? [
+        "Cooked fish — airtight container, fridge, 2 days maximum",
+        "Raw fish — fridge max 1–2 days, or freeze immediately",
+        "Steamed vegetables — airtight container, fridge, 3–4 days",
+        "Boiled eggs unpeeled — fridge, up to 7 days",
+        "Greek yogurt — original pot, check use-by date",
+        "Almonds — pre-portioned bags, room temperature is fine",
+        "Dry rice and oats — pantry, no expiry concern",
+    ] : [
+        "Cooked chicken — airtight container, fridge, 4 days maximum",
+        "Steamed vegetables — airtight container, fridge, 3–4 days",
+        "Boiled eggs unpeeled — fridge, up to 7 days",
+        "Greek yogurt — original pot, check use-by date",
+        "Almonds — pre-portioned bags, room temperature is fine",
+        "Dry rice and oats — pantry, no expiry concern",
+    ]
+
+    return [
+        PrepSection(
+            icon: "calendar", title: "What you cook, and when",
+            badge: nil,
+            items: isFish ? [
+                "Sunday — first cook: Sun + Mon fish",
+                "Tuesday — refresh: Tue + Wed fish",
+                "Thursday — refresh: Thu + Fri fish",
+                "Saturday — cook for Saturday only, or eat out",
+                "Rice, eggs, salad: always cooked or assembled fresh the same day",
+            ] : [
+                "Sunday — big cook: covers Sunday, Monday, Tuesday",
+                "Wednesday — refresh cook: covers Wednesday, Thursday, Friday",
+                "Saturday — covers itself only, or eat out",
+                "Rice, eggs, salad: always cooked or assembled fresh the same day",
+            ],
+            note: "Everything fits in one fridge shelf across containers labelled by day."
+        ),
+        sundayCook,
+        midweekRefresh,
+        PrepSection(
+            icon: "water.waves", title: "Rice — Cook Fresh Daily",
+            badge: "DAILY",
+            items: [
+                "Lunch: 90g dry basmati — 1 part rice to 1.5 parts water",
+                "Dinner: 90g dry basmati — same method, same time",
+                "Bring to boil, lid on, low heat, 12 minutes, do not lift the lid",
+                "Comes to roughly 200g cooked per cook — one serving",
+                "Do not refrigerate and reheat. Refrigerated rice turns dense and starchy.",
+            ],
+            note: nil
+        ),
+        PrepSection(
+            icon: "leaf", title: "Salad — Assemble Fresh Daily",
+            badge: "DAILY",
+            items: [
+                "Quarter iceberg lettuce, half cucumber, one tomato — roughly chop",
+                "Squeeze of lemon, pinch of salt, optional half tbsp olive oil",
+                "Three minutes start to finish. Do not pre-make — lettuce wilts badly.",
+            ],
+            note: nil
+        ),
+        PrepSection(
+            icon: "snowflake", title: "Storage Reference",
+            badge: nil,
+            items: storageItems,
+            note: isFish
+                ? "If fish smells off or looks cloudy — bin it without hesitation. Never worth the risk."
+                : "If chicken smells off or looks grey — bin it without hesitation. Never worth the risk."
+        ),
+    ]
+}
 
 // MARK: - Reusable subviews
 
