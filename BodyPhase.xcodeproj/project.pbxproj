@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 77;
+	objectVersion = 63;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -35,7 +35,7 @@
 
 /* Begin PBXFileReference section */
 		00C29E43988D4CE3E2D68992 /* HabitStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HabitStore.swift; sourceTree = "<group>"; };
-		046DCE0DC0D19F096A68E333 /* BodyPhase.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = BodyPhase.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		046DCE0DC0D19F096A68E333 /* BodyPhase.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = BodyPhase.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		05A6E408AD7E6F0594CC7D25 /* DietView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DietView.swift; sourceTree = "<group>"; };
 		0A6B59DBD6DDA811D0065A59 /* DietPlan.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DietPlan.swift; sourceTree = "<group>"; };
 		12239E3E47797D72DD613D6D /* GridRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GridRowView.swift; sourceTree = "<group>"; };
@@ -59,7 +59,6 @@
 		E923615977566D0CC45313CD /* HabitEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HabitEntry.swift; sourceTree = "<group>"; };
 		"TEMP_91084565-C953-454E-B269-86C0EDFB68EF" /* HabitTrackerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HabitTrackerApp.swift; sourceTree = "<group>"; };
 		"TEMP_B19595C5-E190-4C03-8DAB-35ED1E853581" /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		"TEMP_D008ADFB-ACAA-4E34-8D5E-36D3740D8AC1" /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -106,6 +105,15 @@
 			path = Extensions;
 			sourceTree = "<group>";
 		};
+		65639F732F595EFF0082D38C /* Recovered References */ = {
+			isa = PBXGroup;
+			children = (
+				"TEMP_91084565-C953-454E-B269-86C0EDFB68EF" /* HabitTrackerApp.swift */,
+				"TEMP_B19595C5-E190-4C03-8DAB-35ED1E853581" /* Assets.xcassets */,
+			);
+			name = "Recovered References";
+			sourceTree = "<group>";
+		};
 		7301840395B6373B9535D73C /* Services */ = {
 			isa = PBXGroup;
 			children = (
@@ -137,22 +145,8 @@
 				1224436BE5573B9ED0153184 /* ViewModels */,
 				36A48ED3CAB9C3102AA360DD /* Views */,
 				37467F90147AA2AD6FB75DAA /* Products */,
+				65639F732F595EFF0082D38C /* Recovered References */,
 			);
-			sourceTree = "<group>";
-		};
-		"TEMP_97F736A6-A4DE-41B2-86DB-31E702088BCD" /* habit-tracker */ = {
-			isa = PBXGroup;
-			children = (
-				"TEMP_91084565-C953-454E-B269-86C0EDFB68EF" /* HabitTrackerApp.swift */,
-				"TEMP_B19595C5-E190-4C03-8DAB-35ED1E853581" /* Assets.xcassets */,
-				"TEMP_D008ADFB-ACAA-4E34-8D5E-36D3740D8AC1" /* Info.plist */,
-				1224436BE5573B9ED0153184 /* ViewModels */,
-				F5AA92B86F1BBE1D1E241133 /* Models */,
-				505EDE9935893C0E45DD9235 /* Extensions */,
-				36A48ED3CAB9C3102AA360DD /* Views */,
-				7301840395B6373B9535D73C /* Services */,
-			);
-			path = "habit-tracker";
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -184,11 +178,6 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1600;
-				TargetAttributes = {
-					D8C21189C7FCE4DE41537355 = {
-						DevelopmentTeam = "";
-					};
-				};
 			};
 			buildConfigurationList = 51EF743F492DECE9DA053C06 /* Build configuration list for PBXProject "BodyPhase" */;
 			compatibilityVersion = "Xcode 14.0";
@@ -200,7 +189,6 @@
 			);
 			mainGroup = FDF691F566EB74ECB527E45B;
 			minimizedProjectReferenceProxies = 1;
-			preferredProjectObjectVersion = 77;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
@@ -318,7 +306,10 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				DEVELOPMENT_TEAM = NS5Z5Y6VJ8;
 				INFOPLIST_FILE = Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = BodyPhase;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -405,7 +396,10 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				DEVELOPMENT_TEAM = NS5Z5Y6VJ8;
 				INFOPLIST_FILE = Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = BodyPhase;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",

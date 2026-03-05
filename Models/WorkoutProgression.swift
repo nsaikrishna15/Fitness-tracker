@@ -28,8 +28,10 @@ enum ProgressionEngine {
         switch exerciseID {
         case "la_legpress", "lb_legpress":
             return 5.0
-        case "la_goblet", "lb_rdl", "la_hamcurl", "lb_legext", "lb_hipthrust":
+        case "la_goblet", "lb_rdl", "la_hamcurl", "lb_legext", "lb_hipthrust", "la_lunge":
             return 2.5
+        case "lb_kbswing":
+            return 4.0   // follows kettlebell size increments (8→12→16→20→24→28→32)
         case _ where exerciseID.hasPrefix("ua_") || exerciseID.hasPrefix("ub_"):
             return 2.5
         default:
@@ -48,6 +50,7 @@ enum ProgressionEngine {
             case "ua_latpd":      return 45.0
             case "ua_dbshoulder": return 10.0   // per DB
             case "ua_row":        return 40.0
+            case "ua_tricep":     return 15.0   // cable weight
             case "ua_plank":      return nil     // bodyweight
             // Upper B
             case "ub_incline":    return 12.0   // per DB
@@ -59,21 +62,18 @@ enum ProgressionEngine {
             case "la_legpress":   return 80.0
             case "la_goblet":     return 12.0
             case "la_hamcurl":    return 25.0
-            case "la_calf":       return nil    // bodyweight
+            case "la_lunge":      return 8.0    // per DB; bodyweight in phase 1
             case "la_abs":        return nil    // bodyweight
             // Lower B
             case "lb_legpress":   return 80.0
             case "lb_rdl":        return 20.0   // per DB
             case "lb_legext":     return 30.0
             case "lb_hipthrust":  return 20.0
-            case "lb_abs":        return nil
-            // Squats
-            case "la_squat":      return nil    // bodyweight
+            case "lb_kbswing":    return 16.0   // KB — 16kg standard starting weight
             default:              return nil
             }
         }()
         guard let b = base else { return nil }
-        // Round to nearest 2.5kg after scaling
         let scaled = b * scale
         return (scaled / 2.5).rounded() * 2.5
     }

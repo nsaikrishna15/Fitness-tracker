@@ -115,23 +115,114 @@ struct DietView: View {
         let w = store.latestWeight ?? 80
 
         return VStack(alignment: .leading, spacing: 10) {
+
+            // Header
             HStack {
                 Text("DAILY TARGETS")
                     .font(.system(size: 11, weight: .bold))
                     .foregroundColor(.secondaryText)
                     .tracking(0.8)
                 Spacer()
-                Text(store.latestWeight != nil
-                     ? String(format: "Based on %.0f kg", w)
-                     : "Log weight to personalise")
-                    .font(.system(size: 10))
-                    .foregroundColor(.secondaryText)
+                if let lbm = store.leanBodyMassKg, let wt = store.latestWeight {
+                    Text(String(format: "Protein on %.0f kg LBM (%.0f kg total)", lbm, wt))
+                        .font(.system(size: 10))
+                        .foregroundColor(.secondaryText)
+                } else {
+                    Text(store.latestWeight != nil
+                         ? String(format: "Based on %.0f kg", w)
+                         : "Log weight to personalise")
+                        .font(.system(size: 10))
+                        .foregroundColor(.secondaryText)
+                }
             }
+
+            // Calorie line
             Text("~\(totalKcal) kcal · TDEE ~\(Int(store.tdeeValue ?? 0)) · \(store.intensityMode.deficitLabel).")
                 .font(.system(size: 11))
                 .foregroundColor(.secondaryText)
-                .padding(.bottom, 4)
 
+            // BMI + goal weight block
+            if let bmi = store.bmiValue, let current = store.latestWeight {
+                let (category, catColor): (String, Color) = {
+                    switch bmi {
+                    case ..<18.5: return ("Underweight", Color(hex: "0A84FF"))
+                    case ..<25:   return ("Healthy BMI", Color(hex: "30D158"))
+                    case ..<30:   return ("Overweight",  Color(hex: "FF9F0A"))
+                    default:      return ("Obese",       Color(hex: "FF3B30"))
+                    }
+                }()
+
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack(spacing: 8) {
+                        Text(String(format: "BMI  %.1f", bmi))
+                            .font(.system(size: 15, weight: .bold, design: .monospaced))
+                            .foregroundColor(catColor)
+                        Text(category)
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 7).padding(.vertical, 3)
+                            .background(catColor)
+                            .cornerRadius(4)
+                        Spacer()
+                        Text(String(format: "Current: %.1f kg", current))
+                            .font(.system(size: 11, design: .monospaced))
+                            .foregroundColor(.secondaryText)
+                    }
+
+                    if let targetW = store.bodyFatTargetWeightKg {
+                        let tolose = max(0.0, current - targetW)
+                        let targetBFpct = Int(store.targetBodyFatPct)
+
+                        VStack(alignment: .leading, spacing: 4) {
+                            HStack {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    HStack(spacing: 4) {
+                                        Text(String(format: "Goal: %.1f kg", targetW))
+                                            .font(.system(size: 13, weight: .bold, design: .monospaced))
+                                            .foregroundColor(.primaryText)
+                                        Text("at \(targetBFpct)% body fat")
+                                            .font(.system(size: 11))
+                                            .foregroundColor(.secondaryText)
+                                    }
+                                    if let bmiAtGoal = store.bmiAtTargetWeight {
+                                        Text(String(format: "BMI at goal: %.1f — lean, athletic, normal for your frame", bmiAtGoal))
+                                            .font(.system(size: 10))
+                                            .foregroundColor(.secondaryText)
+                                    }
+                                }
+                                Spacer()
+                                if tolose > 0.5 {
+                                    Text(String(format: "−%.1f kg", tolose))
+                                        .font(.system(size: 13, weight: .bold, design: .monospaced))
+                                        .foregroundColor(catColor)
+                                }
+                            }
+
+                            if tolose > 0.5, let weeks = store.weeksToTargetWeight {
+                                let months = weeks / 4
+                                let remWeeks = weeks % 4
+                                let timeStr = months > 0
+                                    ? (remWeeks > 0 ? "\(months) mo \(remWeeks) wk" : "\(months) months")
+                                    : "\(weeks) weeks"
+                                Text("At current deficit: ~\(timeStr) to reach goal · Stay consistent.")
+                                    .font(.system(size: 11))
+                                    .foregroundColor(.secondaryText)
+                            } else if tolose <= 0 {
+                                Text("You are at or below your goal weight. Focus on maintaining muscle.")
+                                    .font(.system(size: 11))
+                                    .foregroundColor(Color(hex: "30D158"))
+                            }
+                        }
+                        .padding(10)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(catColor.opacity(0.10))
+                        .cornerRadius(8)
+                    }
+                }
+                .padding(.vertical, 2)
+            }
+
+            // Macro tiles
             HStack(spacing: 0) {
                 macroTile("\(totalProtein)g", "Protein", .accentGreen)
                 macroTile("\(totalCarbs)g",   "Carbs",   Color(hex: "FF9F0A"))
@@ -191,9 +282,9 @@ struct DietView: View {
         let nextLabel  = isWeekA ? "Next week: Grapes + Pear" : "Next week: Banana + Apple"
         let fruits: [(name: String, use: String, macro: String)] = isWeekA
             ? [("Banana",  "Pre-workout — 1 medium, grab and go, no prep",    "~27g carbs, quick energy"),
-               ("Apple",   "Afternoon snack — any variety, eat whole",        "~21g carbs, 4g fibre")]
+               ("Apple",   "Afternoon snack — any variety, eat whole",        "~25g carbs, 4g fibre")]
             : [("Grapes",  "Pre-workout or snack — 150g handful, no cutting", "~26g carbs, easy to portion"),
-               ("Pear",    "Afternoon snack — eat whole, pairs with almonds", "~21g carbs, good fibre")]
+               ("Pear",    "Afternoon snack — eat whole, pairs with almonds", "~27g carbs, 5g fibre")]
 
         return VStack(alignment: .leading, spacing: 12) {
             HStack {
@@ -424,8 +515,8 @@ private func mealPlan(from m: [DietPlan.MealMacros], protein: String) -> [MealIt
         }
         return "\(f.proteinSourceGrams)g \(f.proteinSourceLabel) — from batch cook, reheat 2 min"
     }()
-    let lCarbLine = lFoods.map { "\($0.carbsGrams)g \($0.carbsLabel) cooked fresh (→ ~\(Int(Double($0.carbsGrams) * 2.2))g cooked)" }
-        ?? "90g dry basmati rice cooked fresh (→ ~200g cooked)"
+    let lCarbLine = lFoods.map { "\($0.carbsGrams)g \($0.carbsLabel) cooked fresh (→ ~\(Int(Double($0.carbsGrams) * 2.4))g cooked)" }
+        ?? "90g dry basmati rice cooked fresh (→ ~220g cooked)"
 
     // Dinner protein — chicken or fish
     let dProteinLine: String = {
@@ -438,12 +529,12 @@ private func mealPlan(from m: [DietPlan.MealMacros], protein: String) -> [MealIt
         ?? "90g dry rice cooked fresh OR 1 medium sweet potato OR 2 rotis"
 
     let lunchNote = protein == "fish"
-        ? "Fish cooks in 8 min (3 min each side, medium-high heat). Rice takes 12 min — start it first. Veg from the fridge, 2 min microwave."
-        : "Rice cooks fresh daily — start it when you get in, 12 min. Chicken and veg come straight from the fridge, 2 min microwave. This is the largest meal of the day — eat it properly, not at a desk."
+        ? "Fish cooks in 8 min (3 min each side, medium-high heat). Rice takes 12 min — start it first. Veg from the fridge, 2 min microwave. Gram amounts shown are RAW weight — weigh before cooking."
+        : "Rice cooks fresh daily — start it when you get in, 12 min. Chicken and veg come straight from the fridge, 2 min microwave. This is the largest meal of the day — eat it properly, not at a desk. Gram amounts shown are RAW weight — weigh and season before cooking."
 
     let dinnerNote = protein == "fish"
-        ? "Pan-fry the fish in olive oil — 3 min each side, done. Salad always fresh. Olive oil provides healthy fats for hormone production."
-        : "Dinner is hearty — you've worked out and need to recover overnight. Olive oil provides healthy fats for hormone production. Salad always fresh."
+        ? "Pan-fry the fish in olive oil — 3 min each side, done. Salad always fresh. Olive oil provides healthy fats for hormone production. Gram amounts shown are RAW weight — weigh before cooking."
+        : "Dinner is hearty — you've worked out and need to recover overnight. Olive oil provides healthy fats for hormone production. Salad always fresh. Gram amounts shown are RAW weight — weigh and season before cooking."
 
     return [
         MealItem(
@@ -520,14 +611,14 @@ private func buildPrepSections(protein: String) -> [PrepSection] {
             "Portion into containers labelled SUN / MON — fridge immediately after cooling",
             "Steam 400g broccoli + 300g carrot — portion into 3 lunch containers",
             "Hard-boil 14 eggs — leave unpeeled in fridge (lasts all week)",
-            "Pre-bag 7 × 15g almond portions into small zip bags",
+            "Pre-bag 7 × 20g almond portions into small zip bags",
         ] : [
             "Grill 1.1kg raw chicken breast — comes to roughly 800g cooked",
             "Season with cumin, garlic powder, salt, light olive oil spray",
             "Portion into lunch + dinner bags, label MON / TUE / WED-L",
             "Steam 400g broccoli + 300g carrot — portion into 3 lunch containers",
             "Hard-boil 14 eggs — leave unpeeled in fridge (lasts all week)",
-            "Pre-bag 7 × 15g almond portions into small zip bags",
+            "Pre-bag 7 × 20g almond portions into small zip bags",
         ],
         note: isFish
             ? "Cooked fish: 2 days max in fridge — buy again Tuesday. Steamed veg: 3–4 days. Boiled eggs unpeeled: 7 days."
@@ -600,7 +691,7 @@ private func buildPrepSections(protein: String) -> [PrepSection] {
                 "Lunch: 90g dry basmati — 1 part rice to 1.5 parts water",
                 "Dinner: 90g dry basmati — same method, same time",
                 "Bring to boil, lid on, low heat, 12 minutes, do not lift the lid",
-                "Comes to roughly 200g cooked per cook — one serving",
+                "Comes to roughly 220g cooked per cook — one serving",
                 "Do not refrigerate and reheat. Refrigerated rice turns dense and starchy.",
             ],
             note: nil

@@ -143,36 +143,40 @@ struct WorkoutSchedule {
         return DaySession(morning: morning, evening: evening)
     }
 
-    // MARK: - Upper A (Monday)
-    // Phase 1: 3×12 light — learn the movement pattern
-    // Phase 2: 4×10 — add weight, cable row added
-    // Phase 3: 4×8 — heavier, close-grip bench variant on last set
-    // Phase 4: 4×6-8 — max weight, drop set on bench
+    // MARK: - Upper A (Monday) — Chest · Back · Shoulders · Triceps
+    // Equipment: Adjustable bench + dumbbells (DB bench press),
+    //            Hoist Dual Cable (lat pulldown + cable row + tricep pushdown),
+    //            Dumbbells (shoulder press). Bodyweight: plank.
+    // Goal: compound push + pull strength, upper body mass, posture.
 
     private static func upperA(phase: ProgramPhase) -> WorkoutSession {
         let s = phase.gymSets
         let r = phase.gymReps
-        let _ = phase.isolationReps
+        let iso = phase.isolationReps
         return WorkoutSession(
             id: "upper_a_p\(phase.rawValue)",
             slot: "Morning", label: "Upper A", icon: "dumbbell.fill",
             exercises: [
-                ExerciseDefinition(id: "ua_bench",      name: "Bench Press",       targetSets: s, targetReps: r,
-                    targetKg: nil, note: "Controlled descent, 2 sec down. Drive through chest, not shoulders.\(phase == .phase4 ? " Drop set on final set." : "")"),
-                ExerciseDefinition(id: "ua_latpd",      name: "Lat Pulldown",      targetSets: s, targetReps: r,
-                    targetKg: nil, note: "Wide grip. Chest up. Pull to collarbone level. Full stretch at top."),
-                ExerciseDefinition(id: "ua_dbshoulder", name: "DB Shoulder Press", targetSets: s, targetReps: r,
-                    targetKg: nil, note: "Seated. Core braced. Stop just short of lockout at top."),
-                ExerciseDefinition(id: "ua_row",        name: "Cable Row",         targetSets: s, targetReps: r,
-                    targetKg: nil, note: "Sit tall. Pull to lower chest. Squeeze shoulder blades 1 sec."),
-                ExerciseDefinition(id: "ua_plank",      name: "Plank",             targetSets: 3, targetReps: phasePhank(phase),
-                    targetKg: nil, note: "Forearms + toes. Hips level. Breathe. \(phase == .phase1 ? "30 sec target." : phase == .phase2 ? "45 sec target." : "60 sec target.")", isBodyweight: true),
+                ExerciseDefinition(id: "ua_bench",      name: "DB Bench Press",          targetSets: s, targetReps: r,
+                    targetKg: nil, note: "Flat bench + dumbbells. 2 sec down, brief pause at chest, drive up. Elbows at 45–60° — not flared wide.\(phase == .phase4 ? " Drop set on final set — reduce 20% weight, max reps." : "")"),
+                ExerciseDefinition(id: "ua_latpd",      name: "Cable Lat Pulldown",      targetSets: s, targetReps: r,
+                    targetKg: nil, note: "Hoist cable — high pulley, wide overhand grip. Chest tall, pull bar to collarbone. Full stretch at top on every rep. Primary back width builder."),
+                ExerciseDefinition(id: "ua_dbshoulder", name: "Seated DB Shoulder Press",targetSets: s, targetReps: r,
+                    targetKg: nil, note: "Sit on bench (upright). Core braced. Press to just short of lockout — keep tension. Lower controlled 2 sec. Drives testosterone + shoulder strength."),
+                ExerciseDefinition(id: "ua_row",        name: "Cable Row",               targetSets: s, targetReps: r,
+                    targetKg: nil, note: "Hoist cable — low pulley, handle or V-bar. Sit upright. Pull to lower chest — squeeze shoulder blades together for 1 sec. Don't lean back or use momentum."),
+                ExerciseDefinition(id: "ua_tricep",     name: "Cable Tricep Pushdown",   targetSets: 3, targetReps: iso,
+                    targetKg: nil, note: "Hoist cable — high pulley. Keep elbows pinned tight to sides throughout. Push to full extension, slow 2-sec return. Adds arm size and fills out shirt sleeves."),
+                ExerciseDefinition(id: "ua_plank",      name: "Plank",                   targetSets: 3, targetReps: phasePhank(phase),
+                    targetKg: nil, note: "Forearms + toes. Hips level — not sagging, not raised. Breathe steadily. \(phase == .phase1 ? "30 sec build — add 5 sec each week." : phase == .phase2 ? "45 sec target." : "60 sec target — brace abs like you're about to be punched.")", isBodyweight: true),
             ],
             isRest: false
         )
     }
 
-    // MARK: - Upper B (Thursday)
+    // MARK: - Upper B (Thursday) — Incline Chest · Lats · Arms · Rear Delt
+    // Equipment: Adjustable bench (30°) + dumbbells, Hoist Dual Cable (pulldown + face pull + optional curl).
+    // Goal: upper chest detail, bicep/tricep size, rotator cuff health (face pull), arm aesthetics.
 
     private static func upperB(phase: ProgramPhase) -> WorkoutSession {
         let s = phase.gymSets
@@ -182,22 +186,25 @@ struct WorkoutSchedule {
             id: "upper_b_p\(phase.rawValue)",
             slot: "Morning", label: "Upper B", icon: "dumbbell.fill",
             exercises: [
-                ExerciseDefinition(id: "ub_incline",  name: "Incline DB Press",  targetSets: s, targetReps: r,
-                    targetKg: nil, note: "30–45° incline. Elbows at 60°, not flared wide. Full range."),
-                ExerciseDefinition(id: "ub_latpd",    name: "Lat Pulldown",      targetSets: s, targetReps: r,
-                    targetKg: nil, note: "Neutral or close grip on Thursday. Different stimulus to Monday."),
-                ExerciseDefinition(id: "ub_lateral",  name: "Lateral Raise",     targetSets: 3, targetReps: iso,
-                    targetKg: nil, note: "Slight bend in elbow. Lead with elbows. Stop at shoulder height."),
-                ExerciseDefinition(id: "ub_facepull", name: "Face Pull",         targetSets: 3, targetReps: iso,
-                    targetKg: nil, note: "Cable at eye level. Pull to forehead, elbows flared. Externally rotate."),
-                ExerciseDefinition(id: "ub_curl",     name: "DB Bicep Curl",     targetSets: 3, targetReps: iso,
-                    targetKg: nil, note: "Full range. Supinate at top. No swinging — brace your back."),
+                ExerciseDefinition(id: "ub_incline",  name: "Incline DB Press",     targetSets: s, targetReps: r,
+                    targetKg: nil, note: "Bench at 30°. Elbows at 60°, not flared. Targets upper chest + front delt. Full range — touch chest at bottom, stop before lockout at top."),
+                ExerciseDefinition(id: "ub_latpd",    name: "Cable Lat Pulldown",   targetSets: s, targetReps: r,
+                    targetKg: nil, note: "Hoist cable — narrow or neutral grip today. Different stimulus to Monday's wide grip. Pull to upper chest, hold the squeeze 1 sec."),
+                ExerciseDefinition(id: "ub_lateral",  name: "DB Lateral Raise",     targetSets: 3, targetReps: iso,
+                    targetKg: nil, note: "Slight elbow bend. Lead with elbows, stop at shoulder height. Pause 1 sec at top. No momentum — pure lateral delt. Builds shoulder width."),
+                ExerciseDefinition(id: "ub_facepull", name: "Cable Face Pull",      targetSets: 3, targetReps: iso,
+                    targetKg: nil, note: "Hoist cable at eye level — use rope or handles. Pull to forehead, elbows flared high. Externally rotate at end. Critical for posture, shoulder health, and rotator cuff longevity."),
+                ExerciseDefinition(id: "ub_curl",     name: "DB Bicep Curl",        targetSets: 3, targetReps: iso,
+                    targetKg: nil, note: "Full range — supinate (twist) at top, full stretch at bottom. Alternate arms or simultaneous. No swinging. Consistency here adds visible arm size in 8 weeks."),
             ],
             isRest: false
         )
     }
 
-    // MARK: - Lower A (Tuesday)
+    // MARK: - Lower A (Tuesday) — Quad Dominant · Unilateral · Core
+    // Equipment: Hoist Leg Press, Hoist Hamstring Curl machine, dumbbells/kettlebells (goblet + lunge),
+    //            pull-up bar on Hoist cable (hanging knee raise). Bodyweight: lunge phase 1, knee raise.
+    // Goal: quad strength + size, single-leg stability, core, knee health.
 
     private static func lowerA(phase: ProgramPhase) -> WorkoutSession {
         let s = phase.gymSets
@@ -207,23 +214,28 @@ struct WorkoutSchedule {
             id: "lower_a_p\(phase.rawValue)",
             slot: "Morning", label: "Lower A", icon: "figure.strengthtraining.traditional",
             exercises: [
-                ExerciseDefinition(id: "la_legpress",  name: "Leg Press",           targetSets: s, targetReps: r,
-                    targetKg: nil, note: "Feet shoulder-width, mid-platform. Full depth. Don't lock out at top."),
-                ExerciseDefinition(id: "la_goblet",    name: "Goblet Squat",        targetSets: s, targetReps: r,
-                    targetKg: nil, note: phase == .phase1 ? "Hold DB at chest. Week 1–2: BW only to learn depth." : "Hold DB at chest. Heels on floor. Break parallel.",
+                ExerciseDefinition(id: "la_legpress",  name: "Hoist Leg Press",       targetSets: s, targetReps: r,
+                    targetKg: nil, note: "Feet shoulder-width, mid-platform. Full depth — knees track over toes. Don't lock out at top. Primary quad + glute compound. Add weight every session."),
+                ExerciseDefinition(id: "la_goblet",    name: "Goblet Squat",          targetSets: s, targetReps: r,
+                    targetKg: nil, note: phase == .phase1 ? "Hold KB/DB at chest. Phase 1 weeks 1–2: bodyweight to build depth pattern. Heels flat on floor, break parallel, knees tracking out." : "Hold heavy KB/DB at chest. Heels flat. Break parallel every rep. This trains squat depth and hip mobility together.",
                     isBodyweight: phase == .phase1),
-                ExerciseDefinition(id: "la_hamcurl",   name: "Hamstring Curl",      targetSets: s, targetReps: r,
-                    targetKg: nil, note: "Lying or seated. Slow negative — 3 seconds lowering. Full range."),
-                ExerciseDefinition(id: "la_calf",      name: "Calf Raise",          targetSets: 3, targetReps: iso,
-                    targetKg: nil, note: "Full stretch at bottom every rep. Pause 1 sec at top. Can use leg press platform.", isBodyweight: true),
-                ExerciseDefinition(id: "la_abs",       name: "Hanging Knee Raise",  targetSets: 3, targetReps: "12",
-                    targetKg: nil, note: "Controlled. No swinging. Or lying leg raise if no bar.", isBodyweight: true),
+                ExerciseDefinition(id: "la_hamcurl",   name: "Hoist Hamstring Curl",  targetSets: s, targetReps: r,
+                    targetKg: nil, note: "Seated on the Hoist machine. 3-second negative (lower slow) every rep. Full range of motion. Hamstring strength protects knees and improves posture."),
+                ExerciseDefinition(id: "la_lunge",     name: "DB Reverse Lunge",      targetSets: 3, targetReps: iso,
+                    targetKg: nil, note: phase == .phase1 ? "Bodyweight phase 1. Step back until back knee hovers 2 cm above floor. Front shin stays vertical. Alternate legs. Builds single-leg stability." : "Hold DBs at sides. Step back — front shin vertical, back knee just above floor. Alternate legs each rep. Single-leg strength = athletic performance + injury resilience.",
+                    isBodyweight: phase == .phase1),
+                ExerciseDefinition(id: "la_abs",       name: "Hanging Knee Raise",    targetSets: 3, targetReps: "12",
+                    targetKg: nil, note: "Hang from the pull-up bar on the Hoist cable machine. Bring knees to chest — slow and controlled, no swinging. Or: lying leg raise on the mat if bar is occupied.", isBodyweight: true),
             ],
             isRest: false
         )
     }
 
-    // MARK: - Lower B (Saturday)
+    // MARK: - Lower B (Saturday) — Posterior Chain · Glutes · Metabolic Finisher
+    // Equipment: Hoist Leg Press (glute stance), dumbbells (RDL + hip thrust), Hoist Leg Extension,
+    //            kettlebells (KB swing). Bodyweight: hip thrust BW option phase 1.
+    // Goal: glutes + hamstrings for aesthetics + strength, hormonal stimulus (KB swing + hip thrust),
+    //       metabolic conditioning as session finisher.
 
     private static func lowerB(phase: ProgramPhase) -> WorkoutSession {
         let s = phase.gymSets
@@ -233,41 +245,53 @@ struct WorkoutSchedule {
             id: "lower_b_p\(phase.rawValue)",
             slot: "Morning", label: "Lower B", icon: "figure.strengthtraining.traditional",
             exercises: [
-                ExerciseDefinition(id: "lb_legpress",  name: "Leg Press",           targetSets: s, targetReps: r,
-                    targetKg: nil, note: "Narrow stance (inner quads) on Saturdays vs shoulder-width Tuesday."),
-                ExerciseDefinition(id: "lb_rdl",       name: "Romanian Deadlift",   targetSets: s, targetReps: r,
-                    targetKg: nil, note: "DBs close to legs. Hinge at hips, soft knee. Feel hamstrings stretch. Keep back flat."),
-                ExerciseDefinition(id: "lb_legext",    name: "Leg Extension",       targetSets: 3, targetReps: iso,
-                    targetKg: nil, note: "Squeeze quad at top, 1 sec hold. Slow down. Don't use momentum."),
-                ExerciseDefinition(id: "lb_hipthrust", name: "Hip Thrust",          targetSets: 3, targetReps: iso,
-                    targetKg: nil, note: "Back on bench, DB on hips. Drive through heels. Squeeze glutes hard at top."),
-                ExerciseDefinition(id: "lb_abs",       name: "Abs (Crunch / Plank)",targetSets: 3, targetReps: "12",
-                    targetKg: nil, note: "Choice: crunches, ab wheel, or plank. Rotate weekly.", isBodyweight: true),
+                ExerciseDefinition(id: "lb_legpress",  name: "Hoist Leg Press",      targetSets: s, targetReps: r,
+                    targetKg: nil, note: "Today: feet HIP-WIDTH apart, placed HIGH on the platform. This shifts load from quads (Tuesday) to glutes and hamstrings. Full depth, drive through heels."),
+                ExerciseDefinition(id: "lb_rdl",       name: "DB Romanian Deadlift", targetSets: s, targetReps: r,
+                    targetKg: nil, note: "DBs close to shins. Hinge at hips — soft knees, flat back. Feel hamstring stretch at bottom before you drive. Best posterior chain exercise in this program. Heavy and slow."),
+                ExerciseDefinition(id: "lb_legext",    name: "Hoist Leg Extension",  targetSets: 3, targetReps: iso,
+                    targetKg: nil, note: "Hoist machine. Squeeze quad at the top for 1 full sec. 3-sec lowering. Light-moderate weight, perfect contraction every rep. Knee extension strength and quad detail."),
+                ExerciseDefinition(id: "lb_hipthrust", name: "DB Hip Thrust",        targetSets: 3, targetReps: iso,
+                    targetKg: nil, note: "Upper back resting on bench edge, DB/plate across hips. Drive through heels, squeeze glutes hard at the top — chin tucked. Extend your hips, not your lower back. Top exercise for glute development and testosterone response."),
+                ExerciseDefinition(id: "lb_kbswing",   name: "Kettlebell Swing",     targetSets: 4, targetReps: "15",
+                    targetKg: nil, note: "Hip hinge — NOT a squat. Hike KB back between legs, snap hips forward explosively to drive it to chest height. Power from glutes and hips, not arms or shoulders. Best hormonal + metabolic stimulus in this program.\(phase.rawValue >= 3 ? " Phase 3+: go heavy — 24–32 kg target. Each set should feel like a sprint." : " Start 12–16 kg — form before weight.")"),
             ],
             isRest: false
         )
     }
 
     // MARK: - Cardio (Wednesday / Friday)
-    // Builds progressively: Phase 1 = walk, Phase 2 = incline walk, Phase 3/4 = intervals
+    // Wednesday = higher intensity metabolic work (KB circuit → intervals → HIIT)
+    // Friday = steady state active recovery (walk → incline walk → interval build)
+    // Both build cardiovascular health, fat oxidation, skin circulation, and mental reset.
 
     private static func cardio(phase: ProgramPhase, isWed: Bool) -> WorkoutSession {
         let (label, detail, duration, note): (String, String, String, String) = {
             switch phase {
             case .phase1:
-                return ("Walk 30 min", "Brisk Walk", "30 min",
-                        "Outdoor or treadmill. Conversational pace — slightly breathless but can talk. This is your active recovery.")
+                return isWed
+                    ? ("Walk 30 min", "Brisk Walk", "30 min",
+                       "Outdoor or treadmill. Brisk but conversational pace. This is your aerobic base — consistency here is what drives fat oxidation and cardiovascular health. Don't skip.")
+                    : ("Walk 30 min", "Active Recovery Walk", "30 min",
+                       "Easy pace — legs will be sore from Tuesday. 30 min movement to flush lactic acid and improve recovery. Outside if possible — sunlight = cortisol regulation.")
             case .phase2:
-                return ("Incline Walk 35 min", "Incline Walk", "35 min",
-                        "Treadmill: 5–8% incline, 5.5–6 km/h. Or hilly outdoor route. Gets harder without feeling like running.")
+                return isWed
+                    ? ("KB Circuit 35 min", "KB + Walk Circuit", "35 min",
+                       "5 min warm-up walk → 4 rounds: 15 KB swings (pick a weight you can do with crisp form) + 5 min brisk walk → 5 min cool-down. Builds metabolic fitness and burns fat without joint stress.")
+                    : ("Incline Walk 35 min", "Incline Walk", "35 min",
+                       "Treadmill: 5–8% incline, 5.5 km/h. Or hilly outdoor route. Higher calorie burn without running impact. This is one of the most underrated fat-loss tools available.")
             case .phase3:
-                return isWed ? ("Intervals 25 min", "Walk/Jog Intervals", "25 min",
-                                "5 min warm-up walk → 10 rounds: 1 min jog + 1 min walk → 5 min cool-down walk.")
-                             : ("Incline Walk 40 min", "Incline Walk", "40 min",
-                                "Treadmill: 8–10% incline, 6 km/h. Or 40-min brisk walk with hills.")
+                return isWed
+                    ? ("Intervals 25 min", "Walk/Jog Intervals", "25 min",
+                       "5 min warm-up walk → 10 rounds: 1 min jog + 1 min walk → 5 min cool-down. Alternative: 5 rounds of 30 sec heavy KB swings + 90 sec rest. Both build VO2max.")
+                    : ("Incline Walk 40 min", "Incline Walk", "40 min",
+                       "Treadmill: 8–10% incline, 6 km/h. Or 40-min brisk walk with hills. Steady state in fat-burning zone — keeps cortisol low while burning calories.")
             case .phase4:
-                return ("Intervals 30 min", "HIIT Walk/Run", "30 min",
-                        "5 min walk → 8 rounds: 90 sec run + 60 sec walk → 5 min cool-down. Build to steady 20-min jog by end.")
+                return isWed
+                    ? ("HIIT 30 min", "HIIT Intervals", "30 min",
+                       "5 min walk → 8 rounds: 90 sec run + 60 sec walk → 5 min cool-down. Or battle rope: 30 sec all-out + 60 sec rest × 10. Both drive VO2max gains and accelerate fat loss.")
+                    : ("Walk + Intervals 30 min", "Walk + Intervals", "30 min",
+                       "5 min walk → 8 rounds: 1 min jog + 90 sec walk → 5 min cool-down. Active aerobic base session — complements Saturday's heavy lower day.")
             }
         }()
         return WorkoutSession(
@@ -281,17 +305,24 @@ struct WorkoutSchedule {
         )
     }
 
-    // MARK: - Evening (all gym days)
+    // MARK: - Evening (all gym days) — Foam Roll · Stretch · Core · Pelvic Floor
+    // Goal: accelerate recovery, improve flexibility, rebuild deep core, support sexual health,
+    //       reduce cortisol for better sleep, improve skin via circulation + parasympathetic activation.
+    // Equipment: foam roller (in gym), mat. All bodyweight — can do at home or in gym.
 
     private static func eveningGymDay() -> WorkoutSession {
         WorkoutSession(
-            id: "eve_stretch",
-            slot: "Evening", label: "Stretch + Kegels", icon: "figure.flexibility",
+            id: "eve_gym",
+            slot: "Evening", label: "Recovery + Core", icon: "figure.flexibility",
             exercises: [
-                ExerciseDefinition(id: "eve_stretch", name: "Full Body Stretch", targetSets: 1, targetReps: "10 min",
-                    targetKg: nil, note: "Hip flexors, hamstrings, chest, lats, shoulders. Hold each 30–40 sec.", isBodyweight: true),
-                ExerciseDefinition(id: "eve_kegels",  name: "Kegel Holds",       targetSets: 3, targetReps: "20",
-                    targetKg: nil, note: "Contract 5 sec, release 5 sec. Builds pelvic floor strength and sensitivity.", isBodyweight: true),
+                ExerciseDefinition(id: "eve_foam",    name: "Foam Rolling",       targetSets: 1, targetReps: "3 min",
+                    targetKg: nil, note: "Foam roller (in gym). Roll: quads 60s, IT band / outer hip 60s, upper back 60s. Slow — pause on tight spots for 5–10 sec. Flushes metabolic waste and reduces DOMS (delayed soreness).", isBodyweight: true),
+                ExerciseDefinition(id: "eve_stretch", name: "Full Body Stretch",  targetSets: 1, targetReps: "10 min",
+                    targetKg: nil, note: "Hip flexors 60s each side · Hamstrings 60s · Doorway chest stretch 45s · Lat overhead stretch 45s · Shoulder cross-body 30s each. Hold every stretch — no bouncing. Consistent nightly stretching rebuilds flexibility in 4–6 weeks and directly improves sleep quality.", isBodyweight: true),
+                ExerciseDefinition(id: "eve_core",    name: "Dead Bug Hold",      targetSets: 3, targetReps: "10",
+                    targetKg: nil, note: "Lie on back, arms straight up, knees 90°. Extend opposite arm + leg toward floor (2 sec lowering, 1 sec hold). Lower back STAYS FLAT on floor the entire time — this is the point. Rebuilds deep core stability (transverse abdominis) that protects the spine.", isBodyweight: true),
+                ExerciseDefinition(id: "eve_kegels",  name: "Kegel Holds",        targetSets: 3, targetReps: "20",
+                    targetKg: nil, note: "Contract pelvic floor 5 sec, release 5 sec. Builds pelvic floor strength — directly improves sexual function, sensation, and control in both men and women. Takes 6–8 weeks of daily consistency to feel the full effect. Do this every evening without exception.", isBodyweight: true),
             ],
             isRest: false
         )

@@ -159,10 +159,12 @@ final class HabitStore: ObservableObject {
         return DietPlan.targetKcal(tdee: t, isMale: isMale, deficit: deficit)
     }
 
-    /// Daily protein target — 2.2 g/kg bodyweight.
-    var dailyProteinG: Int { DietPlan.proteinGrams(weightKg: latestWeight ?? 80) }
+    /// Daily protein target — 2.2 g/kg LEAN BODY MASS.
+    /// LBM is used instead of total bodyweight to prevent inflated protein for overweight users.
+    /// Falls back to total weight when body composition cannot be estimated (no height/age).
+    var dailyProteinG: Int { DietPlan.proteinGrams(weightKg: latestWeight ?? 80, leanMassKg: leanBodyMassKg) }
 
-    /// Daily fat target — max(25% kcal, 0.5 g/kg).
+    /// Daily fat target — max(25% kcal, 0.5 g/kg total weight) — ACSM minimum for hormonal health.
     var dailyFatG: Int { DietPlan.fatGrams(targetKcal: targetKcal, weightKg: latestWeight ?? 80) }
 
     /// Daily carbs target — fills remaining calories.
@@ -182,6 +184,32 @@ final class HabitStore: ObservableObject {
     var estimatedBodyFatPct: Double? {
         guard let kg = latestWeight, heightCm > 0, age > 0 else { return nil }
         return DietPlan.estimatedBodyFatPct(weightKg: kg, heightCm: heightCm, age: age, isMale: isMale)
+    }
+
+    /// Lean Body Mass = total weight × (1 − BF%). Used for protein calculation.
+    var leanBodyMassKg: Double? {
+        guard let kg = latestWeight, let bf = estimatedBodyFatPct else { return nil }
+        return kg * (1.0 - bf / 100.0)
+    }
+
+    /// Target body weight at user's goal body fat percentage.
+    /// target_weight = LBM ÷ (1 − targetBF%). Accounts for individual muscle mass —
+    /// far more accurate than any BMI-based target for physique goals.
+    var bodyFatTargetWeightKg: Double? {
+        guard let lbm = leanBodyMassKg else { return nil }
+        return DietPlan.targetWeightFromBF(leanMassKg: lbm, targetBFpct: targetBodyFatPct)
+    }
+
+    /// BMI the user will have at their goal weight (informational — shown alongside target weight).
+    var bmiAtTargetWeight: Double? {
+        guard let target = bodyFatTargetWeightKg, heightCm > 0 else { return nil }
+        return DietPlan.bmi(weightKg: target, heightCm: heightCm)
+    }
+
+    /// Estimated weeks to reach goal weight at the current calorie deficit.
+    var weeksToTargetWeight: Int? {
+        guard let kg = latestWeight, let target = bodyFatTargetWeightKg else { return nil }
+        return DietPlan.weeksToTarget(currentKg: kg, targetKg: target, dailyDeficitKcal: intensityMode.calorieDeficit)
     }
 
     /// Difference between estimated current BF% and the user's target.
@@ -253,12 +281,12 @@ final class HabitStore: ObservableObject {
     /// Maps a workout HabitID to the exercises that represent it.
     /// IDs match WorkoutModels.swift exercise IDs exactly.
     private static let workoutHabitExercises: [HabitID: [String]] = [
-        .gymUpperA:      ["ua_bench", "ua_latpd", "ua_dbshoulder", "ua_row", "ua_plank"],
-        .gymLowerA:      ["la_legpress", "la_goblet", "la_hamcurl", "la_calf", "la_abs"],
+        .gymUpperA:      ["ua_bench", "ua_latpd", "ua_dbshoulder", "ua_row", "ua_tricep", "ua_plank"],
+        .gymLowerA:      ["la_legpress", "la_goblet", "la_hamcurl", "la_lunge", "la_abs"],
         .gymUpperB:      ["ub_incline", "ub_latpd", "ub_lateral", "ub_facepull", "ub_curl"],
-        .gymLowerB:      ["lb_legpress", "lb_rdl", "lb_legext", "lb_hipthrust", "lb_abs"],
+        .gymLowerB:      ["lb_legpress", "lb_rdl", "lb_legext", "lb_hipthrust", "lb_kbswing"],
         .walk:           ["walk_main"],
-        .eveningWorkout: ["eve_stretch", "eve_kegels"],
+        .eveningWorkout: ["eve_foam", "eve_stretch", "eve_core", "eve_kegels"],
     ]
 
     /// After any set change, check if all sets for the day's workout are done

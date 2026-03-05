@@ -114,10 +114,45 @@ enum DietPlan {
         Int(max(tdee - Double(deficit), isMale ? 1500.0 : 1200.0))
     }
 
-    // MARK: - Protein: 2.2 g/kg — ISSN recomposition standard (fat loss + muscle retention)
+    // MARK: - Protein: 2.2 g/kg LEAN BODY MASS
+    // Using total bodyweight for overweight individuals inflates protein significantly
+    // (e.g. 100kg at 30% BF → 220g vs correct 154g on LBM), misallocating calories away from
+    // carbs and creating an unsustainable plan. Pass leanMassKg when estimable; falls back to
+    // total weight if body composition data is unavailable.
+    // Source: ISSN 2017 Position Stand; Phillips & Van Loon 2011.
 
-    static func proteinGrams(weightKg: Double) -> Int {
-        Int((weightKg * 2.2).rounded())
+    static func proteinGrams(weightKg: Double, leanMassKg: Double? = nil) -> Int {
+        let basis = leanMassKg ?? weightKg
+        return Int((basis * 2.2).rounded())
+    }
+
+    // MARK: - Target weight based on goal body fat percentage (primary goal metric)
+    // target_weight = LBM ÷ (1 − targetBF%)
+    // This is the correct individual target — it accounts for your actual muscle mass.
+    // BMI 22 is inappropriate as a physique target: a lean athletic male at 180cm
+    // with 15% BF will sit at BMI ~24–25, NOT BMI 22.
+
+    static func targetWeightFromBF(leanMassKg: Double, targetBFpct: Double) -> Double {
+        guard targetBFpct > 1, targetBFpct < 50 else { return leanMassKg }
+        return leanMassKg / (1.0 - targetBFpct / 100.0)
+    }
+
+    // MARK: - BMI at a given weight + height (for informational display only)
+
+    static func bmi(weightKg: Double, heightCm: Double) -> Double {
+        let m = heightCm / 100.0
+        return weightKg / (m * m)
+    }
+
+    // MARK: - Estimated weeks to reach target weight at current daily deficit
+    // Returns nil for recomp/bulk (deficit ≤ 0) or if already at/below target.
+    // 1 kg fat ≈ 7,700 kcal (Wishnofsky 1958; widely adopted clinical standard).
+
+    static func weeksToTarget(currentKg: Double, targetKg: Double, dailyDeficitKcal: Int) -> Int? {
+        let tolose = currentKg - targetKg
+        guard tolose > 0.5, dailyDeficitKcal > 0 else { return nil }
+        let weeklyLossKg = Double(dailyDeficitKcal) * 7.0 / 7700.0
+        return Int(ceil(tolose / weeklyLossKg))
     }
 
     // MARK: - Fat: max(25% of target kcal ÷ 9, 0.5 g/kg) — ACSM minimum for hormonal health
@@ -184,35 +219,42 @@ enum DietPlan {
     }
 
     /// Compute actual ingredient gram amounts from macro targets + user's preferred protein source.
-    /// - Chicken breast:  25g protein per 100g  → grams = targetP × 4
-    /// - Fish (tilapia):  22g protein per 100g  → grams = targetP × 4.545
-    /// - Eggs:            6g protein each        → count = ceil(targetP ÷ 6)
-    /// - Oats (breakfast): 40g dry = 28g carbs  → grams = targetC × (40÷28)
-    /// - Rice (lunch/dinner): 50g dry = 37g carbs → grams = targetC × (50÷37)
+    ///
+    /// Protein amounts are RAW weight — weigh and season BEFORE cooking.
+    /// This matches how food is bought (packaging = raw weight) and how most people portion meals.
+    ///
+    /// Sources (USDA FoodData Central SR Legacy):
+    /// - Chicken breast (raw, boneless skinless): 23.2g protein per 100g → grams = targetP × (100÷23.2)
+    /// - Tilapia / white fish (raw):              20.1g protein per 100g → grams = targetP × (100÷20.1)
+    /// - Eggs:                                    6g protein each         → count = ceil(targetP ÷ 6)
+    /// - Oats (dry, USDA 66.3g carbs/100g): 40g dry = 26.5g carbs → grams = targetC × (40÷26.5)
+    /// - Basmati rice (dry, USDA 79.3g carbs/100g): 50g dry = 39.7g carbs → grams = targetC × (50÷39.7)
     static func foodAmounts(mealMacros: MealMacros, preferredProtein: String, isBreakfast: Bool) -> FoodAmounts {
         let proteinTarget = mealMacros.protein
         let carbTarget    = mealMacros.carbs
 
-        // Protein source
+        // Protein source — RAW weight (weigh before cooking)
         let (proteinGrams, proteinLabel, isEggs): (Int, String, Bool) = {
             switch preferredProtein {
             case "fish":
-                return (Int((Double(proteinTarget) * 4.545).rounded()), "white fish (tilapia/basa)", false)
+                // Tilapia raw (USDA): 20.1g P/100g → factor = 100/20.1 ≈ 4.975
+                return (Int((Double(proteinTarget) * (100.0 / 20.1)).rounded()), "white fish / tilapia (raw)", false)
             case "eggs":
                 return (Int(ceil(Double(proteinTarget) / 6.0)), "eggs", true)
             default:  // chicken
-                return (Int((Double(proteinTarget) * 4.0).rounded()), "chicken breast", false)
+                // Chicken breast raw (USDA): 23.2g P/100g → factor = 100/23.2 ≈ 4.310
+                return (Int((Double(proteinTarget) * (100.0 / 23.2)).rounded()), "chicken breast (raw)", false)
             }
         }()
 
         // Carb source
         let (carbGrams, carbLabel): (Int, String) = {
             if isBreakfast {
-                // Oats: 40g dry → 28g carbs → ratio = 40/28 ≈ 1.4286
-                return (Int((Double(carbTarget) * 40.0 / 28.0).rounded()), "dry oats")
+                // Oats dry (USDA): 66.3g carbs/100g → 40g dry = 26.5g carbs → ratio = 40/26.5 ≈ 1.509
+                return (Int((Double(carbTarget) * 40.0 / 26.5).rounded()), "dry oats")
             } else {
-                // Rice: 50g dry → 37g carbs → ratio = 50/37 ≈ 1.3514
-                return (Int((Double(carbTarget) * 50.0 / 37.0).rounded()), "dry basmati rice")
+                // Basmati rice dry (USDA): 79.3g carbs/100g → 50g dry = 39.7g carbs → ratio = 50/39.7 ≈ 1.259
+                return (Int((Double(carbTarget) * 50.0 / 39.7).rounded()), "dry basmati rice")
             }
         }()
 

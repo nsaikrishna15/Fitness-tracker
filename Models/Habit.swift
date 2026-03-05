@@ -85,25 +85,25 @@ struct HabitDefinition {
 
         HabitDefinition(id: .gymUpperA,
                         time: "7:00–8:00", displayName: "Upper A",
-                        detail: "Bench 3×8 · Lat PD 3×10 · DB Shoulder 3×10 · Row 3×10 · Plank 3×30s",
+                        detail: "DB Bench · Cable Lat PD · DB Shoulder · Cable Row · Tricep PD · Plank",
                         icon: "dumbbell.fill", activeDays: [0],
                         unlockHour: 6, unlockMinute: 59),
 
         HabitDefinition(id: .gymLowerA,
                         time: "7:00–8:00", displayName: "Lower A",
-                        detail: "BW Squat 3×12 · Leg Press 3×10 · Ham Curl 3×12 · Calf 3×15 · Knee Raise 3×12",
+                        detail: "Leg Press · Goblet Squat · Ham Curl · Reverse Lunge · Hanging Knee Raise",
                         icon: "figure.strengthtraining.traditional", activeDays: [1],
                         unlockHour: 6, unlockMinute: 59),
 
         HabitDefinition(id: .gymUpperB,
                         time: "7:00–8:00", displayName: "Upper B",
-                        detail: "Incline DB Press 3×10 · Lat PD 3×10 · Lateral Raise 3×12 · Face Pull 3×12 · DB Curl 3×12",
+                        detail: "Incline DB Press · Lat PD · Lateral Raise · Face Pull · DB Curl",
                         icon: "dumbbell.fill", activeDays: [3],
                         unlockHour: 6, unlockMinute: 59),
 
         HabitDefinition(id: .gymLowerB,
                         time: "7:00–8:00", displayName: "Lower B",
-                        detail: "Goblet Squat 3×10 · Leg Press 3×10 · RDL 3×10 · Abs 3 sets",
+                        detail: "Leg Press · RDL · Leg Extension · Hip Thrust · KB Swing 4×15",
                         icon: "figure.strengthtraining.traditional", activeDays: [5],
                         unlockHour: 6, unlockMinute: 59),
 
@@ -157,7 +157,7 @@ struct HabitDefinition {
 
         HabitDefinition(id: .eveningWorkout,
                         time: "6:00–7:30", displayName: "Evening Session",
-                        detail: "Walk / Stretch / Kegels",
+                        detail: "Foam Roll 3min · Full Stretch 10min · Dead Bug 3×10 · Kegels 3×20",
                         icon: "moon.stars.fill", activeDays: nil,
                         unlockHour: 18, unlockMinute: 0),
 
