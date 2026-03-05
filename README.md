@@ -1,6 +1,6 @@
-# FitTrack
+# BodyPhase
 
-A personal iOS fitness & habit tracker built with SwiftUI. Tracks daily habits, lifting workouts with progressive overload, and a fully dynamic nutrition plan — all calculated from your body stats.
+A personal iOS body transformation app built with SwiftUI. Tracks daily habits, lifting workouts with progressive overload, and a fully dynamic nutrition plan — all calculated from your body stats to hit your target body fat %.
 
 ---
 
@@ -57,7 +57,7 @@ A personal iOS fitness & habit tracker built with SwiftUI. Tracks daily habits, 
 ```bash
 git clone https://github.com/nsaikrishna15/Fitness-tracker.git
 cd Fitness-tracker
-open FitTrack.xcodeproj
+open BodyPhase.xcodeproj
 ```
 
 Then in Xcode:
@@ -69,12 +69,12 @@ Then in Xcode:
 ```bash
 brew install xcodegen      # first time only
 xcodegen generate
-open FitTrack.xcodeproj
+open BodyPhase.xcodeproj
 ```
 
 ### Building for a physical iPhone
 
-1. Open **FitTrack.xcodeproj** in Xcode
+1. Open **BodyPhase.xcodeproj** in Xcode
 2. Select your iPhone from the destination picker
 3. Go to **Signing & Capabilities** and set your Apple ID under Team
 4. Press **Cmd + R**
@@ -101,8 +101,8 @@ Tap **Start My Program** — all tabs become active immediately.
 ## App Structure
 
 ```
-FitTrack/
-├── HabitTrackerApp.swift        # App entry point (FitTrackApp)
+BodyPhase/
+├── HabitTrackerApp.swift        # App entry point (BodyPhaseApp)
 ├── Models/
 │   ├── DietPlan.swift           # All nutrition math + IntensityMode
 │   ├── Habit.swift              # Habit definitions and IDs
@@ -122,7 +122,7 @@ FitTrack/
 │   └── BodyweightChartView.swift
 ├── Services/
 │   ├── NotificationManager.swift
-│   └── PersistenceManager.swift # JSON via NSUbiquitousKeyValueStore + UserDefaults
+│   └── PersistenceManager.swift # JSON via UserDefaults
 ├── Extensions/
 │   ├── Color+Theme.swift        # App colour palette
 │   └── Date+Week.swift          # ISO week helpers
@@ -133,7 +133,7 @@ FitTrack/
 
 ## Data Persistence
 
-All data is stored locally in **UserDefaults** (profile settings) and serialised JSON (habit entries, weight log, workout sets). The persistence layer uses `NSUbiquitousKeyValueStore` where available and falls back to `UserDefaults`.
+All data is stored locally in **UserDefaults** (profile settings) and serialised JSON (habit entries, weight log, workout sets).
 
 No account, no server, no analytics — everything stays on device.
 
@@ -141,7 +141,7 @@ No account, no server, no analytics — everything stays on device.
 
 ## Notifications
 
-FitTrack schedules 15 daily reminders across the day (wake-up water, meals, workout, wind-down). Toggle them in **Settings → Notifications**. Permissions are requested on first toggle — if denied, a prompt directs you to iOS Settings.
+BodyPhase schedules 15 daily reminders across the day (wake-up water, meals, workout, wind-down). Toggle them in **Settings → Notifications**. Permissions are requested on first toggle — if denied, a prompt directs you to iOS Settings.
 
 Delivered notifications are cleared automatically each time the app comes to foreground, so stale banners don't accumulate after reinstallation.
 
