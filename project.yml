@@ -35,6 +35,7 @@ targets:
           - "*.png"
           - "*.jpg"
           - "*.jpeg"
+          - ".git/**"
     settings:
       base:
         PRODUCT_NAME: BodyPhase
