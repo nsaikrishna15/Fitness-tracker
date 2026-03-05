@@ -51,10 +51,12 @@ final class HabitStore: ObservableObject {
             forName: PersistenceManager.remoteChangeNotification,
             object: nil, queue: .main
         ) { [weak self] _ in
-            guard let self else { return }
-            self.entries       = self.persistence.loadHabitEntries()
-            self.weightEntries = self.persistence.loadWeightEntries()
-            self.workoutSets   = self.persistence.loadWorkoutSets()
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                self.entries       = self.persistence.loadHabitEntries()
+                self.weightEntries = self.persistence.loadWeightEntries()
+                self.workoutSets   = self.persistence.loadWorkoutSets()
+            }
         }
     }
 
