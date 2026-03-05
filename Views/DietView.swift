@@ -509,28 +509,51 @@ private func mealPlan(from m: [DietPlan.MealMacros], protein: String) -> [MealIt
         ?? "50g dry oats cooked in water (microwave, 3 min) + 1 banana sliced in"
 
     // Lunch protein — chicken or fish from batch
+    // Show raw target AND cooked fridge equivalent so both cook-day and fridge-day are clear.
     let lProteinLine: String = {
         guard let f = lFoods else {
-            return protein == "fish" ? "180g white fish (tilapia / basa) — from batch or cook fresh" : "200g chicken breast — from Sunday or Wednesday batch"
+            return protein == "fish"
+                ? "180g raw white fish (tilapia / basa) — or ≈135g cooked from fridge"
+                : "200g raw chicken breast — or ≈144g cooked from fridge"
         }
-        return "\(f.proteinSourceGrams)g \(f.proteinSourceLabel) — from batch cook, reheat 2 min"
+        switch protein {
+        case "fish":
+            let cooked = Int((Double(f.proteinSourceGrams) * 0.75).rounded())
+            return "\(f.proteinSourceGrams)g raw \(f.proteinSourceLabel) — cook day: weigh raw. Fridge day: weigh ≈\(cooked)g cooked"
+        case "eggs":
+            return "\(f.proteinSourceGrams) eggs — fresh or from fridge"
+        default: // chicken
+            let cooked = Int((Double(f.proteinSourceGrams) * 0.72).rounded())
+            return "\(f.proteinSourceGrams)g raw \(f.proteinSourceLabel) — cook day: weigh raw. Fridge day: weigh ≈\(cooked)g cooked"
+        }
     }()
-    let lCarbLine = lFoods.map { "\($0.carbsGrams)g \($0.carbsLabel) cooked fresh (→ ~\(Int(Double($0.carbsGrams) * 2.4))g cooked)" }
-        ?? "90g dry basmati rice cooked fresh (→ ~220g cooked)"
+    let lCarbLine = lFoods.map { "\($0.carbsGrams)g \($0.carbsLabel) → ~\(Int(Double($0.carbsGrams) * 2.5))g cooked — measure dry before water" }
+        ?? "90g dry sona masoori rice → ~225g cooked — measure dry before water"
 
     // Dinner protein — chicken or fish
     let dProteinLine: String = {
         guard let f = dFoods else {
-            return protein == "fish" ? "180g white fish (tilapia / basa) — pan-fry with olive oil" : "170g chicken breast — grilled or pan-fried"
+            return protein == "fish"
+                ? "180g raw white fish (tilapia / basa) — cook fresh, or ≈135g cooked from fridge"
+                : "170g raw chicken breast — cook fresh, or ≈122g cooked from fridge"
         }
-        return "\(f.proteinSourceGrams)g \(f.proteinSourceLabel) — grilled or pan-fried"
+        switch protein {
+        case "fish":
+            let cooked = Int((Double(f.proteinSourceGrams) * 0.75).rounded())
+            return "\(f.proteinSourceGrams)g raw \(f.proteinSourceLabel) — cook fresh, or ≈\(cooked)g cooked from fridge"
+        case "eggs":
+            return "\(f.proteinSourceGrams) eggs — scrambled or boiled"
+        default: // chicken
+            let cooked = Int((Double(f.proteinSourceGrams) * 0.72).rounded())
+            return "\(f.proteinSourceGrams)g raw \(f.proteinSourceLabel) — cook fresh, or ≈\(cooked)g cooked from fridge"
+        }
     }()
     let dCarbLine = dFoods.map { "\($0.carbsGrams)g \($0.carbsLabel) cooked fresh OR 1 medium sweet potato OR 2 rotis" }
-        ?? "90g dry rice cooked fresh OR 1 medium sweet potato OR 2 rotis"
+        ?? "90g dry sona masoori rice cooked fresh OR 1 medium sweet potato OR 2 rotis"
 
     let lunchNote = protein == "fish"
-        ? "Fish cooks in 8 min (3 min each side, medium-high heat). Rice takes 12 min — start it first. Veg from the fridge, 2 min microwave. Gram amounts shown are RAW weight — weigh before cooking."
-        : "Rice cooks fresh daily — start it when you get in, 12 min. Chicken and veg come straight from the fridge, 2 min microwave. This is the largest meal of the day — eat it properly, not at a desk. Gram amounts shown are RAW weight — weigh and season before cooking."
+        ? "Rice: always cook fresh — measure the dry grams shown before adding water. Fish: on cook-day weigh raw; on fridge-day take out cooked portion and weigh it (shown in brackets). Fish keeps max 2 days cooked. Veg from fridge, 2 min microwave."
+        : "Rice: always cook fresh — measure the dry grams shown before adding water. Chicken: on Sunday or Wednesday cook-day weigh raw before grilling; on other days take cooked chicken from fridge and weigh the cooked portion shown in brackets. Chicken keeps 4 days cooked. Eat this meal properly — not at a desk."
 
     let dinnerNote = protein == "fish"
         ? "Pan-fry the fish in olive oil — 3 min each side, done. Salad always fresh. Olive oil provides healthy fats for hormone production. Gram amounts shown are RAW weight — weigh before cooking."
@@ -595,7 +618,9 @@ private let supplementPlan: [(String, String)] = [
     ("Breakfast",    "1× Thorne Basic Nutrients — take with food"),
     ("Dinner",       "1× Thorne Basic Nutrients — take with food"),
     ("Pre-Workout",  "1 scoop whey + fruit — this is meal 2 in the plan above"),
-    ("Optional",     "Creatine monohydrate 5g — stir into pre-workout shake, any time of day"),
+    ("Optional",     "Creatine monohydrate 5g — stir into pre-workout shake, any time of day. Loading not required; consistent daily use is what matters."),
+    ("Optional",     "Omega-3 fish oil: 2–3g EPA+DHA per day — take with dinner (dietary fat improves absorption by 30–50%). Use triglyceride-form fish oil, not ethyl ester. 2–3 capsules of a quality concentrate (look for ≥900mg EPA+DHA per cap) covers the target. Skip if you eat fatty fish 3+ times per week. Source: ISSN Position Stand on omega-3."),
+    ("Optional",     "Magnesium glycinate or malate: 300–400mg elemental magnesium at bedtime. Oxide form absorbs poorly (~4%) — avoid it. Glycinate is the least disruptive to digestion and promotes sleep quality. Malate suits those who train in the evening. Magnesium supports sleep quality, muscle recovery, and testosterone production. Source: ACSM; EFSA."),
     ("Note",         "On rest days skip the pre-workout shake. Add 30g oats to breakfast instead."),
 ]
 
@@ -613,7 +638,7 @@ private func buildPrepSections(protein: String) -> [PrepSection] {
             "Hard-boil 14 eggs — leave unpeeled in fridge (lasts all week)",
             "Pre-bag 7 × 20g almond portions into small zip bags",
         ] : [
-            "Grill 1.1kg raw chicken breast — comes to roughly 800g cooked",
+            "Grill 1.1kg raw chicken breast — comes to roughly 790g cooked (weigh cooked batches per container)",
             "Season with cumin, garlic powder, salt, light olive oil spray",
             "Portion into lunch + dinner bags, label MON / TUE / WED-L",
             "Steam 400g broccoli + 300g carrot — portion into 3 lunch containers",

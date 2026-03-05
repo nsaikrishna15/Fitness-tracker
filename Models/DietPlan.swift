@@ -223,12 +223,18 @@ enum DietPlan {
     /// Protein amounts are RAW weight — weigh and season BEFORE cooking.
     /// This matches how food is bought (packaging = raw weight) and how most people portion meals.
     ///
+    /// On batch cook days weigh the raw protein before cooking.
+    /// On non-cook days pull from the fridge and weigh the COOKED portion:
+    ///   chicken breast cooked ≈ raw × 0.72  (loses ~28% moisture when grilled/baked)
+    ///   white fish cooked      ≈ raw × 0.75  (loses ~25% moisture when pan-fried)
+    ///
     /// Sources (USDA FoodData Central SR Legacy):
     /// - Chicken breast (raw, boneless skinless): 23.2g protein per 100g → grams = targetP × (100÷23.2)
     /// - Tilapia / white fish (raw):              20.1g protein per 100g → grams = targetP × (100÷20.1)
     /// - Eggs:                                    6g protein each         → count = ceil(targetP ÷ 6)
     /// - Oats (dry, USDA 66.3g carbs/100g): 40g dry = 26.5g carbs → grams = targetC × (40÷26.5)
-    /// - Basmati rice (dry, USDA 79.3g carbs/100g): 50g dry = 39.7g carbs → grams = targetC × (50÷39.7)
+    /// - Sona Masoori rice (dry, USDA medium-grain white rice 79.3g carbs/100g):
+    ///   50g dry = 39.7g carbs → grams = targetC × (50÷39.7); cooked weight ≈ dry × 2.5
     static func foodAmounts(mealMacros: MealMacros, preferredProtein: String, isBreakfast: Bool) -> FoodAmounts {
         let proteinTarget = mealMacros.protein
         let carbTarget    = mealMacros.carbs
@@ -253,8 +259,9 @@ enum DietPlan {
                 // Oats dry (USDA): 66.3g carbs/100g → 40g dry = 26.5g carbs → ratio = 40/26.5 ≈ 1.509
                 return (Int((Double(carbTarget) * 40.0 / 26.5).rounded()), "dry oats")
             } else {
-                // Basmati rice dry (USDA): 79.3g carbs/100g → 50g dry = 39.7g carbs → ratio = 50/39.7 ≈ 1.259
-                return (Int((Double(carbTarget) * 50.0 / 39.7).rounded()), "dry basmati rice")
+                // Sona Masoori rice dry (USDA medium-grain white rice): 79.3g carbs/100g → 50g dry = 39.7g carbs
+                // Cooked weight ≈ dry × 2.5 (absorbs more water than long-grain)
+                return (Int((Double(carbTarget) * 50.0 / 39.7).rounded()), "dry sona masoori rice")
             }
         }()
 
