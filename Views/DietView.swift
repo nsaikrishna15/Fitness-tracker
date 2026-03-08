@@ -586,7 +586,7 @@ private func mealPlan(from m: [DietPlan.MealMacros], protein: String) -> [MealIt
 
     let lunchNote = protein == "fish"
         ? "Rice: always cook fresh — measure the dry grams shown before adding water. Fish: on cook-day weigh raw; on fridge-day take out cooked portion and weigh it (shown in brackets). Fish keeps max 2 days cooked. Veg from fridge, 2 min microwave."
-        : "Rice: always cook fresh — measure the dry grams shown before adding water. Chicken: on Sunday or Wednesday cook-day weigh raw before grilling; on other days take cooked chicken from fridge and weigh the cooked portion shown in brackets. Chicken keeps 4 days cooked. Eat this meal properly — not at a desk."
+        : "Rice: always cook fresh — measure the dry grams shown before adding water. Chicken: on Sunday or Wednesday evening cook-day weigh raw before grilling; on other days take cooked chicken from fridge and weigh the cooked portion shown in brackets. Chicken keeps 4 days cooked. Eat this meal properly — not at a desk."
 
     let dinnerNote = protein == "fish"
         ? "Pan-fry the fish in olive oil — 3 min each side, done. Salad always fresh. Olive oil provides healthy fats for hormone production. Gram amounts shown are RAW weight — weigh before cooking."
@@ -668,10 +668,11 @@ private func buildPrepSections(
     let isFish = protein == "fish"
     let weeklyEggs = Int(ceil(Double(snackProtein) / 6.0)) * 7
 
-    // Chicken: 3-day batch (Sun covers Sun/Mon/Tue, Wed covers Wed/Thu/Fri)
-    let chickenBatchRaw = lProteinGrams * 3 + dProteinGrams * 3
-    let chickenBatchKg = String(format: "%.1f", Double(chickenBatchRaw) / 1000.0)
-    let chickenBatchCooked = Int((Double(chickenBatchRaw) * 0.72).rounded())
+    // Chicken: Sunday 4-day batch (Sun/Mon/Tue/Wed), Wednesday evening 3-day batch (Thu/Fri/Sat)
+    let sunChickenRaw    = lProteinGrams * 4 + dProteinGrams * 4
+    let sunChickenCooked = Int((Double(sunChickenRaw) * 0.72).rounded())
+    let wedChickenRaw    = lProteinGrams * 3 + dProteinGrams * 3
+    let wedChickenCooked = Int((Double(wedChickenRaw) * 0.72).rounded())
 
     // Fish: 2-day batch (cooked fish keeps max 2 days in fridge)
     let fishBatchRaw = lProteinGrams * 2 + dProteinGrams * 2
@@ -690,42 +691,43 @@ private func buildPrepSections(
             "Buy \(fishBatchLabel) raw tilapia/basa (L:\(lProteinGrams)g + D:\(dProteinGrams)g × 2 days) — covers Sun + Mon (max 2 days cooked)",
             "Pan-fry in batches: 3 min each side on medium-high, season with lemon + cumin + salt",
             "Portion into containers labelled SUN / MON — fridge immediately after cooling",
-            "Steam 400g broccoli + 300g carrot — portion into 3 lunch containers",
+            "Steam 400g broccoli + 300g carrot — portion into 4 lunch containers",
             "Hard-boil \(weeklyEggs) eggs — leave unpeeled in fridge (lasts all week)",
             "Pre-bag 7 × 20g almond portions into small zip bags",
         ] : [
-            "Grill \(chickenBatchRaw)g raw chicken breast (L:\(lProteinGrams)g + D:\(dProteinGrams)g × 3 days) → ~\(chickenBatchCooked)g cooked — portion per container",
+            "Grill \(sunChickenRaw)g raw chicken breast (L:\(lProteinGrams)g + D:\(dProteinGrams)g × 4 days) → ~\(sunChickenCooked)g cooked",
             "Season with cumin, garlic powder, salt, light olive oil spray",
-            "Portion into lunch + dinner bags, label MON / TUE / WED-L",
-            "Steam 400g broccoli + 300g carrot — portion into 3 lunch containers",
+            "Label containers: SUN / MON / TUE / WED — fridge immediately after cooling",
+            "Steam 400g broccoli + 300g carrot — portion into 4 lunch containers",
             "Hard-boil \(weeklyEggs) eggs — leave unpeeled in fridge (lasts all week)",
             "Pre-bag 7 × 20g almond portions into small zip bags",
         ],
         note: isFish
             ? "Cooked fish: 2 days max in fridge — buy again Tuesday. Steamed veg: 3–4 days. Boiled eggs unpeeled: 7 days."
-            : "Cooked chicken: 4 days max in fridge. Steamed veg: 3–4 days. Boiled eggs unpeeled: 7 days."
+            : "Cooked chicken: 4 days max in fridge — carries you through Wednesday. Steamed veg keeps 3–4 days. Boiled eggs unpeeled: 7 days."
     )
 
     let midweekRefresh = PrepSection(
-        icon: "arrow.clockwise", title: isFish ? "Tuesday + Thursday Refresh" : "Wednesday Refresh",
-        badge: isFish ? "TUE/THU" : "WED",
+        icon: "arrow.clockwise", title: isFish ? "Tuesday + Thursday Refresh" : "Wednesday Evening Cook",
+        badge: isFish ? "TUE/THU" : "WED EVE",
         items: isFish ? [
             "Buy another \(fishBatchLabel) raw fish on Tuesday (L:\(lProteinGrams)g + D:\(dProteinGrams)g × 2 days) — covers Tue + Wed",
             "Buy \(fishBatchLabel) more raw fish on Thursday (same amounts) — covers Thu + Fri",
+            "Saturday: cook 1 fresh portion or eat out",
             "Same cook method: pan-fry in batches, 3 min each side",
             "Steam capsicum + zucchini this time for variety",
             "Top up eggs if running below 6",
             "Restock: rice, yogurt, salad veg, almonds, this week's fruit",
         ] : [
-            "Grill another \(chickenBatchRaw)g raw chicken breast (L:\(lProteinGrams)g + D:\(dProteinGrams)g × 3 days) — same method as Sunday",
-            "Steam broccoli + capsicum this time for variety",
+            "Grill \(wedChickenRaw)g raw chicken breast (L:\(lProteinGrams)g + D:\(dProteinGrams)g × 3 days) → ~\(wedChickenCooked)g cooked — same method as Sunday",
+            "Steam broccoli + capsicum — portion into 3 lunch containers",
             "Hard-boil 6 more eggs if running low",
             "Restock: buy rice, yogurt, salad veg, almonds, and this week's fruit",
             "Label containers THU / FRI / SAT",
         ],
         note: isFish
             ? "Fish cooks in under 10 minutes — do it the evening before or morning of. No long batch session needed."
-            : "Takes around 45 minutes. Put it on while you're doing something else."
+            : "Takes around 45 minutes. Covers the rest of the week — Thursday, Friday, Saturday."
     )
 
     let storageItems: [String] = isFish ? [
@@ -753,12 +755,11 @@ private func buildPrepSections(
                 "Sunday — first cook: Sun + Mon fish",
                 "Tuesday — refresh: Tue + Wed fish",
                 "Thursday — refresh: Thu + Fri fish",
-                "Saturday — cook for Saturday only, or eat out",
+                "Saturday — cook fresh or eat out",
                 "Rice, eggs, salad: always cooked or assembled fresh the same day",
             ] : [
-                "Sunday — big cook: covers Sunday, Monday, Tuesday",
-                "Wednesday — refresh cook: covers Wednesday, Thursday, Friday",
-                "Saturday — covers itself only, or eat out",
+                "Sunday — big cook (4 days): covers Sunday, Monday, Tuesday, Wednesday",
+                "Wednesday evening — cook (3 days): covers Thursday, Friday, Saturday",
                 "Rice, eggs, salad: always cooked or assembled fresh the same day",
             ],
             note: "Everything fits in one fridge shelf across containers labelled by day."
