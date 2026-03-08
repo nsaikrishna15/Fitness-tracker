@@ -397,11 +397,16 @@ struct DietView: View {
             ? DietPlan.foodAmounts(mealMacros: computedMeals[4], preferredProtein: protein, isBreakfast: false)
             : nil
         let snackProtein = computedMeals.count > 3 ? computedMeals[3].protein : 30
+        let bFoods = computedMeals.count > 1
+            ? DietPlan.foodAmounts(mealMacros: computedMeals[1], preferredProtein: "eggs", isBreakfast: true)
+            : nil
+        let bEggsCount = bFoods?.proteinSourceGrams ?? 5
+        let bCarbGrams = bFoods?.carbsGrams ?? 50
         let lG = lFoods?.proteinSourceGrams ?? (protein == "fish" ? 180 : 200)
         let dG = dFoods?.proteinSourceGrams ?? (protein == "fish" ? 180 : 170)
         let lC = lFoods?.carbsGrams ?? 90
         let dC = dFoods?.carbsGrams ?? 90
-        let sections = buildPrepSections(protein: protein, lProteinGrams: lG, dProteinGrams: dG, lCarbGrams: lC, dCarbGrams: dC, snackProtein: snackProtein)
+        let sections = buildPrepSections(protein: protein, lProteinGrams: lG, dProteinGrams: dG, lCarbGrams: lC, dCarbGrams: dC, snackProtein: snackProtein, bEggsCount: bEggsCount, bCarbGrams: bCarbGrams)
         let currentWeight = store.latestWeight
         return VStack(alignment: .leading, spacing: 0) {
             // Macro basis — always visible so the user can confirm calculations are live
@@ -663,7 +668,9 @@ private func buildPrepSections(
     dProteinGrams: Int,
     lCarbGrams: Int,
     dCarbGrams: Int,
-    snackProtein: Int
+    snackProtein: Int,
+    bEggsCount: Int,
+    bCarbGrams: Int
 ) -> [PrepSection] {
     let isFish = protein == "fish"
     let weeklyEggs = Int(ceil(Double(snackProtein) / 6.0)) * 7
@@ -683,50 +690,91 @@ private func buildPrepSections(
     // Rice cooked equivalents (dry × 2.5 for sona masoori)
     let lCookedRice = Int((Double(lCarbGrams) * 2.5).rounded())
     let dCookedRice = Int((Double(dCarbGrams) * 2.5).rounded())
+    // Weekly pantry totals
+    let weeklyRiceG  = (lCarbGrams + dCarbGrams) * 7
+    let weeklyOatsG  = bCarbGrams * 7
+    let wedRiceG     = (lCarbGrams + dCarbGrams) * 3
 
     let sundayCook = PrepSection(
-        icon: "flame", title: "Sunday Cook",
+        icon: "flame", title: "Sunday Cook — All Meals",
         badge: "SUN",
         items: isFish ? [
-            "Buy \(fishBatchLabel) raw tilapia/basa (L:\(lProteinGrams)g + D:\(dProteinGrams)g × 2 days) — covers Sun + Mon (max 2 days cooked)",
-            "Pan-fry in batches: 3 min each side on medium-high, season with lemon + cumin + salt",
-            "Portion into containers labelled SUN / MON — fridge immediately after cooling",
-            "Steam 400g broccoli + 300g carrot — portion into 4 lunch containers",
-            "Hard-boil \(weeklyEggs) eggs — leave unpeeled in fridge (lasts all week)",
-            "Pre-bag 7 × 20g almond portions into small zip bags",
+            // Pre-workout
+            "Fruit (pre-workout + breakfast): wash and bag 7 daily servings of this week's rotation",
+            // Breakfast
+            "Eggs (breakfast): need \(bEggsCount)/morning × 7 days = \(bEggsCount * 7) raw eggs — keep in fridge, cook fresh each morning",
+            "Oats (breakfast): \(bCarbGrams)g dry per morning — check you have \(weeklyOatsG)g in stock for the week",
+            // Lunch + Dinner protein
+            "Fish (lunch + dinner): buy \(fishBatchLabel) raw tilapia/basa (L:\(lProteinGrams)g + D:\(dProteinGrams)g × 2 days) — Sun + Mon only",
+            "Pan-fry fish: 3 min each side, medium-high, lemon + cumin + salt — label SUN / MON",
+            // Lunch veg
+            "Veg (lunch): steam 400g broccoli + 300g carrot → portion into 4 labelled lunch containers (covers all week)",
+            // Snack
+            "Eggs (snack): hard-boil \(weeklyEggs) — leave unpeeled in fridge (7-day life)",
+            "Almonds (snack): pre-bag 7 × 20g into zip bags — one per day",
+            // Dinner
+            "Salad (dinner): buy 2 small iceberg lettuces, 5 cucumbers, 7 tomatoes, 3–4 lemons — assemble fresh each night",
+            // Pantry
+            "Pantry: dry rice \(weeklyRiceG)g + dry oats \(weeklyOatsG)g for the week — top up if low; check whey (7 scoops), creatine, Thorne capsules",
         ] : [
-            "Grill \(sunChickenRaw)g raw chicken breast (L:\(lProteinGrams)g + D:\(dProteinGrams)g × 4 days) → ~\(sunChickenCooked)g cooked",
-            "Season with cumin, garlic powder, salt, light olive oil spray",
-            "Label containers: SUN / MON / TUE / WED — fridge immediately after cooling",
-            "Steam 400g broccoli + 300g carrot — portion into 4 lunch containers",
-            "Hard-boil \(weeklyEggs) eggs — leave unpeeled in fridge (lasts all week)",
-            "Pre-bag 7 × 20g almond portions into small zip bags",
+            // Pre-workout
+            "Fruit (pre-workout + breakfast): wash and bag 7 daily servings of this week's rotation",
+            // Breakfast
+            "Eggs (breakfast): need \(bEggsCount)/morning × 4 days = \(bEggsCount * 4) raw eggs for Sun–Wed — keep in fridge, cook fresh each morning",
+            "Oats (breakfast): \(bCarbGrams)g dry per morning — check jar has at least \(bCarbGrams * 4)g; refill from bulk if low",
+            // Lunch + Dinner protein
+            "Chicken (lunch + dinner): grill \(sunChickenRaw)g raw (L:\(lProteinGrams)g + D:\(dProteinGrams)g × 4 days) → ~\(sunChickenCooked)g cooked",
+            "Season with cumin, garlic powder, salt, light olive oil spray — label SUN / MON / TUE / WED",
+            // Lunch veg
+            "Veg (lunch): steam 400g broccoli + 300g carrot → portion into 4 labelled lunch containers",
+            // Snack
+            "Eggs (snack): hard-boil \(weeklyEggs) — leave unpeeled in fridge (7-day life)",
+            "Almonds (snack): pre-bag 7 × 20g into zip bags — one per day",
+            // Dinner
+            "Salad (dinner): buy 1 iceberg lettuce, 2 cucumbers, 4 tomatoes, 2 lemons — assemble fresh each night",
+            // Pantry
+            "Pantry: dry rice \(weeklyRiceG)g + dry oats \(weeklyOatsG)g for the week — top up if low; check whey (7 scoops), creatine, Thorne capsules",
         ],
         note: isFish
-            ? "Cooked fish: 2 days max in fridge — buy again Tuesday. Steamed veg: 3–4 days. Boiled eggs unpeeled: 7 days."
-            : "Cooked chicken: 4 days max in fridge — carries you through Wednesday. Steamed veg keeps 3–4 days. Boiled eggs unpeeled: 7 days."
+            ? "Fish keeps 2 days max — buy fresh again Tue and Thu. Steamed veg lasts the full week (3–4 days). Hard-boiled eggs: 7 days unpeeled."
+            : "Cooked chicken: 4 days max — carries you through Wednesday. Steamed veg: 3–4 days. Hard-boiled eggs: 7 days unpeeled."
     )
 
     let midweekRefresh = PrepSection(
-        icon: "arrow.clockwise", title: isFish ? "Tuesday + Thursday Refresh" : "Wednesday Evening Cook",
+        icon: "arrow.clockwise", title: isFish ? "Tuesday + Thursday Refresh" : "Wednesday Evening Cook — All Meals",
         badge: isFish ? "TUE/THU" : "WED EVE",
         items: isFish ? [
-            "Buy another \(fishBatchLabel) raw fish on Tuesday (L:\(lProteinGrams)g + D:\(dProteinGrams)g × 2 days) — covers Tue + Wed",
-            "Buy \(fishBatchLabel) more raw fish on Thursday (same amounts) — covers Thu + Fri",
+            // Protein refresh
+            "Fish (Tue lunch + dinner): buy \(fishBatchLabel) raw (L:\(lProteinGrams)g + D:\(dProteinGrams)g × 2) — covers Tue + Wed",
+            "Fish (Thu lunch + dinner): buy \(fishBatchLabel) raw same amounts — covers Thu + Fri",
             "Saturday: cook 1 fresh portion or eat out",
-            "Same cook method: pan-fry in batches, 3 min each side",
-            "Steam capsicum + zucchini this time for variety",
-            "Top up eggs if running below 6",
-            "Restock: rice, yogurt, salad veg, almonds, this week's fruit",
+            "Cook method: pan-fry 3 min each side, same seasoning as Sunday",
+            // Veg
+            "Veg (lunch): steam capsicum + zucchini — portion into 4 containers (Tue–Fri)",
+            // Snack
+            "Eggs (snack): hard-boil 6 more if supply running below 4",
+            // Dinner
+            "Salad (dinner): buy fresh lettuce, 4 cucumbers, 4 tomatoes, 2 lemons for Tue–Fri dinners",
+            // Top-up
+            "Restock: top up fruit, Greek yogurt, almonds (if below 4 bags), rice, oats",
         ] : [
-            "Grill \(wedChickenRaw)g raw chicken breast (L:\(lProteinGrams)g + D:\(dProteinGrams)g × 3 days) → ~\(wedChickenCooked)g cooked — same method as Sunday",
-            "Steam broccoli + capsicum — portion into 3 lunch containers",
-            "Hard-boil 6 more eggs if running low",
-            "Restock: buy rice, yogurt, salad veg, almonds, and this week's fruit",
-            "Label containers THU / FRI / SAT",
+            // Breakfast
+            "Eggs (breakfast): buy \(bEggsCount * 3) more raw eggs for Thu–Sat mornings — cook fresh each day",
+            "Oats (breakfast): check jar has at least \(bCarbGrams * 3)g dry oats left",
+            // Lunch + Dinner protein
+            "Chicken (lunch + dinner): grill \(wedChickenRaw)g raw (L:\(lProteinGrams)g + D:\(dProteinGrams)g × 3 days) → ~\(wedChickenCooked)g cooked",
+            "Season same as Sunday — label THU / FRI / SAT",
+            // Lunch veg
+            "Veg (lunch): steam broccoli + capsicum → portion into 3 labelled containers",
+            // Snack
+            "Eggs (snack): hard-boil 6 more if supply running below 3",
+            // Dinner
+            "Salad (dinner): buy 1 iceberg lettuce, 3 cucumbers, 3 tomatoes, 1–2 lemons — for 3 dinners",
+            // Top-up
+            "Restock: top up fruit (Thu–Sat), Greek yogurt, almonds if below 3 bags, dry rice \(wedRiceG)g",
         ],
         note: isFish
-            ? "Fish cooks in under 10 minutes — do it the evening before or morning of. No long batch session needed."
+            ? "Fish cooks in under 10 minutes — do it the evening before or morning of."
             : "Takes around 45 minutes. Covers the rest of the week — Thursday, Friday, Saturday."
     )
 
