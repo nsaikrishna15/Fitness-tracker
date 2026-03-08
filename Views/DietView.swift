@@ -390,7 +390,18 @@ struct DietView: View {
     // MARK: - Prep card
 
     private func prepCard(protein: String) -> some View {
-        let sections = buildPrepSections(protein: protein)
+        let lFoods = computedMeals.count > 2
+            ? DietPlan.foodAmounts(mealMacros: computedMeals[2], preferredProtein: protein, isBreakfast: false)
+            : nil
+        let dFoods = computedMeals.count > 4
+            ? DietPlan.foodAmounts(mealMacros: computedMeals[4], preferredProtein: protein, isBreakfast: false)
+            : nil
+        let snackProtein = computedMeals.count > 3 ? computedMeals[3].protein : 30
+        let lG = lFoods?.proteinSourceGrams ?? (protein == "fish" ? 180 : 200)
+        let dG = dFoods?.proteinSourceGrams ?? (protein == "fish" ? 180 : 170)
+        let lC = lFoods?.carbsGrams ?? 90
+        let dC = dFoods?.carbsGrams ?? 90
+        let sections = buildPrepSections(protein: protein, lProteinGrams: lG, dProteinGrams: dG, lCarbGrams: lC, dCarbGrams: dC, snackProtein: snackProtein)
         return VStack(alignment: .leading, spacing: 0) {
             ForEach(sections) { section in
                 VStack(alignment: .leading, spacing: 8) {
@@ -624,25 +635,48 @@ private let supplementPlan: [(String, String)] = [
     ("Note",         "On rest days skip the pre-workout shake. Add 30g oats to breakfast instead."),
 ]
 
-private func buildPrepSections(protein: String) -> [PrepSection] {
+private func buildPrepSections(
+    protein: String,
+    lProteinGrams: Int,
+    dProteinGrams: Int,
+    lCarbGrams: Int,
+    dCarbGrams: Int,
+    snackProtein: Int
+) -> [PrepSection] {
     let isFish = protein == "fish"
+    let weeklyEggs = Int(ceil(Double(snackProtein) / 6.0)) * 7
+
+    // Chicken: 3-day batch (Sun covers Sun/Mon/Tue, Wed covers Wed/Thu/Fri)
+    let chickenBatchRaw = lProteinGrams * 3 + dProteinGrams * 3
+    let chickenBatchKg = String(format: "%.1f", Double(chickenBatchRaw) / 1000.0)
+    let chickenBatchCooked = Int((Double(chickenBatchRaw) * 0.72).rounded())
+
+    // Fish: 2-day batch (cooked fish keeps max 2 days in fridge)
+    let fishBatchRaw = lProteinGrams * 2 + dProteinGrams * 2
+    let fishBatchLabel = fishBatchRaw >= 1000
+        ? String(format: "%.1fkg", Double(fishBatchRaw) / 1000.0)
+        : "\(fishBatchRaw)g"
+
+    // Rice cooked equivalents (dry × 2.5 for sona masoori)
+    let lCookedRice = Int((Double(lCarbGrams) * 2.5).rounded())
+    let dCookedRice = Int((Double(dCarbGrams) * 2.5).rounded())
 
     let sundayCook = PrepSection(
         icon: "flame", title: "Sunday Cook",
         badge: "SUN",
         items: isFish ? [
-            "Buy 600g fresh tilapia or basa — covers Sun + Mon (fish doesn't keep more than 2 days cooked)",
+            "Buy \(fishBatchLabel) fresh tilapia or basa — covers Sun + Mon (fish doesn't keep more than 2 days cooked)",
             "Pan-fry in batches: 3 min each side on medium-high, season with lemon + cumin + salt",
             "Portion into containers labelled SUN / MON — fridge immediately after cooling",
             "Steam 400g broccoli + 300g carrot — portion into 3 lunch containers",
-            "Hard-boil 14 eggs — leave unpeeled in fridge (lasts all week)",
+            "Hard-boil \(weeklyEggs) eggs — leave unpeeled in fridge (lasts all week)",
             "Pre-bag 7 × 20g almond portions into small zip bags",
         ] : [
-            "Grill 1.1kg raw chicken breast — comes to roughly 790g cooked (weigh cooked batches per container)",
+            "Grill \(chickenBatchKg)kg raw chicken breast — comes to roughly \(chickenBatchCooked)g cooked (weigh cooked batches per container)",
             "Season with cumin, garlic powder, salt, light olive oil spray",
             "Portion into lunch + dinner bags, label MON / TUE / WED-L",
             "Steam 400g broccoli + 300g carrot — portion into 3 lunch containers",
-            "Hard-boil 14 eggs — leave unpeeled in fridge (lasts all week)",
+            "Hard-boil \(weeklyEggs) eggs — leave unpeeled in fridge (lasts all week)",
             "Pre-bag 7 × 20g almond portions into small zip bags",
         ],
         note: isFish
@@ -654,14 +688,14 @@ private func buildPrepSections(protein: String) -> [PrepSection] {
         icon: "arrow.clockwise", title: isFish ? "Tuesday + Thursday Refresh" : "Wednesday Refresh",
         badge: isFish ? "TUE/THU" : "WED",
         items: isFish ? [
-            "Buy another 600g fish on Tuesday — covers Tue + Wed",
-            "Buy 600g more on Thursday — covers Thu + Fri",
+            "Buy another \(fishBatchLabel) fish on Tuesday — covers Tue + Wed",
+            "Buy \(fishBatchLabel) more on Thursday — covers Thu + Fri",
             "Same cook method: pan-fry in batches, 3 min each side",
             "Steam capsicum + zucchini this time for variety",
             "Top up eggs if running below 6",
             "Restock: rice, yogurt, salad veg, almonds, this week's fruit",
         ] : [
-            "Grill another 1.1kg raw chicken breast — same method as Sunday",
+            "Grill another \(chickenBatchKg)kg raw chicken breast — same method as Sunday",
             "Steam broccoli + capsicum this time for variety",
             "Hard-boil 6 more eggs if running low",
             "Restock: buy rice, yogurt, salad veg, almonds, and this week's fruit",
@@ -713,10 +747,10 @@ private func buildPrepSections(protein: String) -> [PrepSection] {
             icon: "water.waves", title: "Rice — Cook Fresh Daily",
             badge: "DAILY",
             items: [
-                "Lunch: 90g dry basmati — 1 part rice to 1.5 parts water",
-                "Dinner: 90g dry basmati — same method, same time",
+                "Lunch: \(lCarbGrams)g dry sona masoori rice — 1 part rice to 1.5 parts water",
+                "Dinner: \(dCarbGrams)g dry sona masoori rice — same method, same time",
                 "Bring to boil, lid on, low heat, 12 minutes, do not lift the lid",
-                "Comes to roughly 220g cooked per cook — one serving",
+                "Lunch comes to ~\(lCookedRice)g cooked; dinner ~\(dCookedRice)g cooked",
                 "Do not refrigerate and reheat. Refrigerated rice turns dense and starchy.",
             ],
             note: nil

@@ -11,6 +11,9 @@ struct SettingsView: View {
     @State private var ageText: String = ""
     @State private var targetFatText: String = ""
 
+    private enum SettingsField { case height, age, targetFat }
+    @FocusState private var focusedField: SettingsField?
+
     private let manager = NotificationManager.shared
 
     var body: some View {
@@ -44,6 +47,7 @@ struct SettingsView: View {
                         .font(.system(size: 14, design: .monospaced))
                         .foregroundColor(.accentGreen)
                         .frame(width: 70)
+                        .focused($focusedField, equals: .height)
                         .onChange(of: heightText) { val in
                             if let h = Double(val), h > 100 { store.heightCm = h }
                         }
@@ -65,6 +69,7 @@ struct SettingsView: View {
                         .font(.system(size: 14, design: .monospaced))
                         .foregroundColor(.accentGreen)
                         .frame(width: 70)
+                        .focused($focusedField, equals: .age)
                         .onChange(of: ageText) { val in
                             if let a = Int(val), a > 15, a < 90 { store.age = a }
                         }
@@ -91,6 +96,7 @@ struct SettingsView: View {
                         .font(.system(size: 14, design: .monospaced))
                         .foregroundColor(.accentGreen)
                         .frame(width: 50)
+                        .focused($focusedField, equals: .targetFat)
                         .onChange(of: targetFatText) { val in
                             let n = val.replacingOccurrences(of: ",", with: ".")
                             if let f = Double(n), f > 3 { store.targetBodyFatPct = f }
@@ -304,6 +310,14 @@ struct SettingsView: View {
         .background(Color.appBackground)
         .navigationTitle("Settings")
         .navigationBarTitleDisplayMode(.large)
+        .toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button("Done") { focusedField = nil }
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundColor(.accentGreen)
+            }
+        }
         .onAppear {
             refreshStatus()
             if store.heightCm > 0 { heightText = String(Int(store.heightCm)) }

@@ -385,7 +385,7 @@ struct WorkoutView: View {
                     // Sets progress — only in interactive mode
                     if !session.isRest, case .interactive = mode {
                         let done  = session.exercises.reduce(0) { $0 + store.workoutSetsForExercise(date: selectedDate, exerciseID: $1.id).filter { $0.completed }.count }
-                        let total = session.exercises.reduce(0) { $0 + $1.targetSets }
+                        let total = session.exercises.reduce(0) { $0 + (store.isDeloadWeek ? 2 : $1.targetSets) }
                         if total > 0 {
                             Text("\(done) / \(total) sets")
                                 .font(.system(size: 11, weight: .medium))
@@ -471,6 +471,12 @@ struct PreviewExerciseRow: View {
     let exercise: ExerciseDefinition
     @EnvironmentObject private var store: HabitStore
 
+    private var effectiveSets: Int { store.isDeloadWeek ? 2 : exercise.targetSets }
+    private var effectiveSuggested: Double? {
+        guard let kg = store.suggestedWeight(for: exercise.id) else { return nil }
+        return store.isDeloadWeek ? ((kg * 0.8) / 2.5).rounded() * 2.5 : kg
+    }
+
     var body: some View {
         HStack(spacing: 0) {
             VStack(alignment: .leading, spacing: 3) {
@@ -479,7 +485,7 @@ struct PreviewExerciseRow: View {
                     .foregroundColor(.primaryText.opacity(0.65))
 
                 HStack(spacing: 4) {
-                    Text("\(exercise.targetSets) sets · \(exercise.targetReps)")
+                    Text("\(effectiveSets) sets · \(exercise.targetReps)")
                         .font(.system(size: 11))
                         .foregroundColor(.secondaryText.opacity(0.7))
 
@@ -487,8 +493,9 @@ struct PreviewExerciseRow: View {
                         Text("· bodyweight")
                             .font(.system(size: 11))
                             .foregroundColor(.secondaryText.opacity(0.5))
-                    } else if let kg = store.suggestedWeight(for: exercise.id) {
-                        Text("· \(formattedKg(kg)) kg est.")
+                    } else if let kg = effectiveSuggested {
+                        let suffix = store.isDeloadWeek ? "deload" : "est."
+                        Text("· \(formattedKg(kg)) kg \(suffix)")
                             .font(.system(size: 11))
                             .foregroundColor(.secondaryText.opacity(0.7))
                     }
@@ -527,6 +534,13 @@ struct ExerciseCard: View {
 
     private var suggested: Double? { store.suggestedWeight(for: exercise.id) }
 
+    // During deload week: cap at 2 sets, reduce weight to 80% (nearest 2.5 kg)
+    private var effectiveSets: Int { store.isDeloadWeek ? 2 : exercise.targetSets }
+    private var effectiveSuggested: Double? {
+        guard let kg = suggested else { return nil }
+        return store.isDeloadWeek ? ((kg * 0.8) / 2.5).rounded() * 2.5 : kg
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
@@ -536,18 +550,21 @@ struct ExerciseCard: View {
                         .foregroundColor(.primaryText)
                     let weightLabel: String = {
                         if exercise.isBodyweight { return "bodyweight" }
-                        if let kg = suggested { return "\(formattedKg(kg)) kg suggested" }
+                        if let kg = effectiveSuggested {
+                            let suffix = store.isDeloadWeek ? "deload" : "suggested"
+                            return "\(formattedKg(kg)) kg \(suffix)"
+                        }
                         return "bodyweight"
                     }()
-                    Text("\(exercise.targetSets) sets · \(exercise.targetReps) · \(weightLabel)")
+                    Text("\(effectiveSets) sets · \(exercise.targetReps) · \(weightLabel)")
                         .font(.system(size: 11))
                         .foregroundColor(.secondaryText)
                 }
                 Spacer()
                 let done = store.workoutSetsForExercise(date: date, exerciseID: exercise.id).filter { $0.completed }.count
-                Text("\(done)/\(exercise.targetSets)")
+                Text("\(done)/\(effectiveSets)")
                     .font(.system(size: 12, weight: .bold, design: .monospaced))
-                    .foregroundColor(done >= exercise.targetSets ? .accentGreen : .secondaryText)
+                    .foregroundColor(done >= effectiveSets ? .accentGreen : .secondaryText)
             }
             .padding(.horizontal, 14)
             .padding(.top, 12)
@@ -563,8 +580,8 @@ struct ExerciseCard: View {
 
             Divider().background(Color.cellBorder)
 
-            ForEach(1...exercise.targetSets, id: \.self) { setNum in
-                SetRow(exercise: exercise, date: date, setNumber: setNum, suggestedKg: suggested)
+            ForEach(1...effectiveSets, id: \.self) { setNum in
+                SetRow(exercise: exercise, date: date, setNumber: setNum, suggestedKg: effectiveSuggested)
                     .onChange(of: store.workoutSets) { _ in checkAndRecordCompletion() }
                 if setNum < exercise.targetSets {
                     Divider().background(Color.cellBorder).padding(.leading, 14)
@@ -581,7 +598,7 @@ struct ExerciseCard: View {
         guard !exercise.isBodyweight else { return }
         let sets = store.workoutSetsForExercise(date: date, exerciseID: exercise.id)
         let done = sets.filter { $0.completed }.count
-        if done >= exercise.targetSets {
+        if done >= effectiveSets {
             store.recordExerciseCompletion(exerciseID: exercise.id,
                                            allSetsCompleted: true,
                                            dateKey: date.dateKey)

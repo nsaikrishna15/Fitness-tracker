@@ -301,11 +301,14 @@ final class HabitStore: ObservableObject {
             if let mask = HabitDefinition.all.first(where: { $0.id == habitID })?.activeDays,
                !mask.contains(dayIdx) { continue }
 
-            // Find all expected sets across all exercises for this habit
+            // Find all expected sets across all exercises for this habit.
+            // During deload week each exercise is capped at 2 sets.
+            let effectiveSetsPerExercise: (String) -> Int = { exID in
+                guard let def = WorkoutType.allExercises.first(where: { $0.id == exID }) else { return 0 }
+                return self.programDayStore.isDeloadWeek ? 2 : def.targetSets
+            }
             let allSets = workoutSets.filter { $0.dateKey == dateKey && exerciseIDs.contains($0.exerciseID) }
-            let totalExpected = exerciseIDs.compactMap { exID in
-                WorkoutType.allExercises.first { $0.id == exID }?.targetSets
-            }.reduce(0, +)
+            let totalExpected = exerciseIDs.reduce(0) { $0 + effectiveSetsPerExercise($1) }
             let allDone = totalExpected > 0 && allSets.filter { $0.completed }.count >= totalExpected
 
             // Update the habit entry to match
@@ -327,7 +330,8 @@ final class HabitStore: ObservableObject {
         guard let exerciseIDs = Self.workoutHabitExercises[habitID] else { return }
         for exID in exerciseIDs {
             guard let def = WorkoutType.allExercises.first(where: { $0.id == exID }) else { continue }
-            for setNum in 1...def.targetSets {
+            let effectiveSets = programDayStore.isDeloadWeek ? 2 : def.targetSets
+            for setNum in 1...effectiveSets {
                 let existing = workoutSets.first {
                     $0.dateKey == dateKey && $0.exerciseID == exID && $0.setNumber == setNum
                 }
