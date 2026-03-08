@@ -402,7 +402,29 @@ struct DietView: View {
         let lC = lFoods?.carbsGrams ?? 90
         let dC = dFoods?.carbsGrams ?? 90
         let sections = buildPrepSections(protein: protein, lProteinGrams: lG, dProteinGrams: dG, lCarbGrams: lC, dCarbGrams: dC, snackProtein: snackProtein)
+        let currentWeight = store.latestWeight
         return VStack(alignment: .leading, spacing: 0) {
+            // Macro basis — always visible so the user can confirm calculations are live
+            VStack(alignment: .leading, spacing: 4) {
+                HStack {
+                    Text(String(format: "%dg P · %dg C · %dg F · %d kcal / day",
+                                totalProtein, totalCarbs, totalFat, totalKcal))
+                        .font(.system(size: 11, design: .monospaced))
+                        .foregroundColor(.accentGreen)
+                    Spacer()
+                    Text(currentWeight.map { String(format: "%.1f kg", $0) } ?? "80 kg est.")
+                        .font(.system(size: 11, design: .monospaced))
+                        .foregroundColor(currentWeight == nil ? .orange : .secondaryText)
+                }
+                if currentWeight == nil {
+                    Text("Log your weight in the Bodyweight tab — gram amounts will update automatically.")
+                        .font(.system(size: 11))
+                        .foregroundColor(.orange)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            .padding(.horizontal, 14).padding(.vertical, 10)
+            Divider().background(Color.cellBorder)
             ForEach(sections) { section in
                 VStack(alignment: .leading, spacing: 8) {
                     HStack(spacing: 8) {
@@ -665,14 +687,14 @@ private func buildPrepSections(
         icon: "flame", title: "Sunday Cook",
         badge: "SUN",
         items: isFish ? [
-            "Buy \(fishBatchLabel) fresh tilapia or basa — covers Sun + Mon (fish doesn't keep more than 2 days cooked)",
+            "Buy \(fishBatchLabel) raw tilapia/basa (L:\(lProteinGrams)g + D:\(dProteinGrams)g × 2 days) — covers Sun + Mon (max 2 days cooked)",
             "Pan-fry in batches: 3 min each side on medium-high, season with lemon + cumin + salt",
             "Portion into containers labelled SUN / MON — fridge immediately after cooling",
             "Steam 400g broccoli + 300g carrot — portion into 3 lunch containers",
             "Hard-boil \(weeklyEggs) eggs — leave unpeeled in fridge (lasts all week)",
             "Pre-bag 7 × 20g almond portions into small zip bags",
         ] : [
-            "Grill \(chickenBatchKg)kg raw chicken breast — comes to roughly \(chickenBatchCooked)g cooked (weigh cooked batches per container)",
+            "Grill \(chickenBatchRaw)g raw chicken breast (L:\(lProteinGrams)g + D:\(dProteinGrams)g × 3 days) → ~\(chickenBatchCooked)g cooked — portion per container",
             "Season with cumin, garlic powder, salt, light olive oil spray",
             "Portion into lunch + dinner bags, label MON / TUE / WED-L",
             "Steam 400g broccoli + 300g carrot — portion into 3 lunch containers",
@@ -688,14 +710,14 @@ private func buildPrepSections(
         icon: "arrow.clockwise", title: isFish ? "Tuesday + Thursday Refresh" : "Wednesday Refresh",
         badge: isFish ? "TUE/THU" : "WED",
         items: isFish ? [
-            "Buy another \(fishBatchLabel) fish on Tuesday — covers Tue + Wed",
-            "Buy \(fishBatchLabel) more on Thursday — covers Thu + Fri",
+            "Buy another \(fishBatchLabel) raw fish on Tuesday (L:\(lProteinGrams)g + D:\(dProteinGrams)g × 2 days) — covers Tue + Wed",
+            "Buy \(fishBatchLabel) more raw fish on Thursday (same amounts) — covers Thu + Fri",
             "Same cook method: pan-fry in batches, 3 min each side",
             "Steam capsicum + zucchini this time for variety",
             "Top up eggs if running below 6",
             "Restock: rice, yogurt, salad veg, almonds, this week's fruit",
         ] : [
-            "Grill another \(chickenBatchKg)kg raw chicken breast — same method as Sunday",
+            "Grill another \(chickenBatchRaw)g raw chicken breast (L:\(lProteinGrams)g + D:\(dProteinGrams)g × 3 days) — same method as Sunday",
             "Steam broccoli + capsicum this time for variety",
             "Hard-boil 6 more eggs if running low",
             "Restock: buy rice, yogurt, salad veg, almonds, and this week's fruit",
