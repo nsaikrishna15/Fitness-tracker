@@ -308,14 +308,18 @@ struct SettingsView: View {
         }
         .scrollContentBackground(.hidden)
         .background(Color.appBackground)
+        .scrollDismissesKeyboard(.immediately)
         .navigationTitle("Settings")
         .navigationBarTitleDisplayMode(.large)
         .toolbar {
-            ToolbarItemGroup(placement: .keyboard) {
-                Spacer()
-                Button("Done") { focusedField = nil }
+            ToolbarItem(placement: .navigationBarTrailing) {
+                if focusedField != nil {
+                    Button("Done") {
+                        focusedField = nil
+                    }
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundColor(.accentGreen)
+                }
             }
         }
         .onAppear {
