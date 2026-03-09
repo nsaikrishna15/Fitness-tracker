@@ -623,7 +623,7 @@ private func mealPlan(from m: [DietPlan.MealMacros], protein: String) -> [MealIt
             ingredients: [
                 lProteinLine,
                 lCarbLine,
-                "Steamed broccoli + carrot — batch-cooked, reheat 2 min",
+                "100g steamed broccoli + 75g steamed carrot — from batch container, reheat 2 min in microwave",
             ],
             macros: m.count > 2 ? m[2].summary : "",
             notes: lunchNote
@@ -641,9 +641,9 @@ private func mealPlan(from m: [DietPlan.MealMacros], protein: String) -> [MealIt
             time: "7:30 PM", name: "Dinner",
             ingredients: [
                 dProteinLine,
-                "Fresh salad: lettuce + cucumber + tomato + lemon (3 min to chop)",
+                "Fresh salad: 80g iceberg lettuce + 100g cucumber + 120g tomato (1 medium) + squeeze of half a lemon",
+                "Dressing: 1 tbsp (15ml) olive oil + pinch of salt — toss at the table",
                 dCarbLine,
-                "1 tbsp olive oil on salad or to cook the protein",
                 "1 Thorne Basic Nutrients capsule",
             ],
             macros: m.count > 4 ? m[4].summary : "",
@@ -708,12 +708,12 @@ private func buildPrepSections(
             "Fish (lunch + dinner): buy \(fishBatchLabel) raw tilapia/basa (L:\(lProteinGrams)g + D:\(dProteinGrams)g × 2 days) — Sun + Mon only",
             "Pan-fry fish: 3 min each side, medium-high, lemon + cumin + salt — label SUN / MON",
             // Lunch veg
-            "Veg (lunch): steam 400g broccoli + 300g carrot → portion into 4 labelled lunch containers (covers all week)",
+            "Veg (lunch): steam 400g broccoli + 300g carrot → 4 containers (100g broccoli + 75g carrot per container, covers all week)",
             // Snack
             "Eggs (snack): hard-boil \(weeklyEggs) — leave unpeeled in fridge (7-day life)",
             "Almonds (snack): pre-bag 7 × 20g into zip bags — one per day",
             // Dinner
-            "Salad (dinner): buy 2 small iceberg lettuces, 5 cucumbers, 7 tomatoes, 3–4 lemons — assemble fresh each night",
+            "Salad (dinner): buy 2 small iceberg lettuces (~80g/portion), 7 cucumbers (~100g/portion), 7 tomatoes (~120g each), 3–4 lemons — assemble fresh nightly",
             // Pantry
             "Pantry: dry rice \(weeklyRiceG)g + dry oats \(weeklyOatsG)g for the week — top up if low; check whey (7 scoops), creatine, Thorne capsules",
         ] : [
@@ -726,12 +726,12 @@ private func buildPrepSections(
             "Chicken (lunch + dinner): grill \(sunChickenRaw)g raw (L:\(lProteinGrams)g + D:\(dProteinGrams)g × 4 days) → ~\(sunChickenCooked)g cooked",
             "Season with cumin, garlic powder, salt, light olive oil spray — label SUN / MON / TUE / WED",
             // Lunch veg
-            "Veg (lunch): steam 400g broccoli + 300g carrot → portion into 4 labelled lunch containers",
+            "Veg (lunch): steam 400g broccoli + 300g carrot → 4 containers (100g broccoli + 75g carrot per container)",
             // Snack
             "Eggs (snack): hard-boil \(weeklyEggs) — leave unpeeled in fridge (7-day life)",
             "Almonds (snack): pre-bag 7 × 20g into zip bags — one per day",
             // Dinner
-            "Salad (dinner): buy 1 iceberg lettuce, 2 cucumbers, 4 tomatoes, 2 lemons — assemble fresh each night",
+            "Salad (dinner): buy 1 iceberg lettuce (~80g/portion), 2 cucumbers (~100g/portion), 4 tomatoes (~120g each), 2 lemons — 80g lettuce + 100g cucumber + 120g tomato + 15ml lemon juice each night",
             // Pantry
             "Pantry: dry rice \(weeklyRiceG)g + dry oats \(weeklyOatsG)g for the week — top up if low; check whey (7 scoops), creatine, Thorne capsules",
         ],
@@ -750,11 +750,11 @@ private func buildPrepSections(
             "Saturday: cook 1 fresh portion or eat out",
             "Cook method: pan-fry 3 min each side, same seasoning as Sunday",
             // Veg
-            "Veg (lunch): steam capsicum + zucchini — portion into 4 containers (Tue–Fri)",
+            "Veg (lunch): steam 400g capsicum + 400g zucchini → 4 containers (~100g capsicum + ~100g zucchini per container, Tue–Fri)",
             // Snack
             "Eggs (snack): hard-boil 6 more if supply running below 4",
             // Dinner
-            "Salad (dinner): buy fresh lettuce, 4 cucumbers, 4 tomatoes, 2 lemons for Tue–Fri dinners",
+            "Salad (dinner): buy 1 iceberg lettuce (~80g/portion), 4 cucumbers (~100g each), 4 tomatoes (~120g each), 2 lemons — for 4 dinners",
             // Top-up
             "Restock: top up fruit, Greek yogurt, almonds (if below 4 bags), rice, oats",
         ] : [
@@ -765,11 +765,11 @@ private func buildPrepSections(
             "Chicken (lunch + dinner): grill \(wedChickenRaw)g raw (L:\(lProteinGrams)g + D:\(dProteinGrams)g × 3 days) → ~\(wedChickenCooked)g cooked",
             "Season same as Sunday — label THU / FRI / SAT",
             // Lunch veg
-            "Veg (lunch): steam broccoli + capsicum → portion into 3 labelled containers",
+            "Veg (lunch): steam 400g broccoli + 400g capsicum → 3 containers (~133g broccoli + ~133g capsicum per container)",
             // Snack
             "Eggs (snack): hard-boil 6 more if supply running below 3",
             // Dinner
-            "Salad (dinner): buy 1 iceberg lettuce, 3 cucumbers, 3 tomatoes, 1–2 lemons — for 3 dinners",
+            "Salad (dinner): buy 1 iceberg lettuce (~80g/portion), 3 cucumbers (~100g each), 3 tomatoes (~120g each), 1–2 lemons — for 3 dinners",
             // Top-up
             "Restock: top up fruit (Thu–Sat), Greek yogurt, almonds if below 3 bags, dry rice \(wedRiceG)g",
         ],
@@ -830,9 +830,12 @@ private func buildPrepSections(
             icon: "leaf", title: "Salad — Assemble Fresh Daily",
             badge: "DAILY",
             items: [
-                "Quarter iceberg lettuce, half cucumber, one tomato — roughly chop",
-                "Squeeze of lemon, pinch of salt, optional half tbsp olive oil",
-                "Three minutes start to finish. Do not pre-make — lettuce wilts badly.",
+                "80g iceberg lettuce (~¼ small head) — tear or roughly chop",
+                "100g cucumber (~½ medium) — slice or dice",
+                "120g tomato (1 medium) — wedge or dice",
+                "Squeeze of half a lemon (~15ml juice) + pinch of salt",
+                "1 tbsp (15ml) olive oil — toss everything together at the table",
+                "3 minutes. Do not pre-make — lettuce wilts badly.",
             ],
             note: nil
         ),
